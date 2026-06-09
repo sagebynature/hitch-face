@@ -1,11 +1,12 @@
 # Hitch Face (BMO Edition)
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/3c97c473-a3b7-4880-9852-a0c1121bbe38" />
+
 
 Animated desktop BMO widget that mirrors Hitch events in real time.
 
 ## Features
 
-- **Frameless/Borderless Widget**: Frameless 750x500 overlay that stays above other windows.
-- **Always-on-Top**: Always visible by default.
+- **Frameless/Borderless Widget**: overlay that stays above other windows.
 - **Interactive & Draggable**: Position the widget anywhere on screen.
 - **Local Event Endpoint**: Starts a local HTTP endpoint at `127.0.0.1:8888`.
 - **Expression Mapping**: Supports all standard Hitch event types (session/turn/llm/tool/retry/subagent/error).
@@ -44,8 +45,8 @@ npm start
 ### Option B — Install script
 
 ```bash
-chmod +x install.sh
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch-face/main/install.sh | sh
+hitch-face
 ```
 
 This copies the extension to:
