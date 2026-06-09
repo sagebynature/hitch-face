@@ -22,11 +22,11 @@ if [ -f "$CONFIG_PATH" ]; then
   fi
 fi
 
-# If the event type is valid, POST it to the desktop widget endpoint
-if [ -n "$EVENT_TYPE" ] && [ "$EVENT_TYPE" != "null" ]; then
+# If the input is non-empty, POST the entire envelope to the /event endpoint
+if [ -n "$INPUT" ] && [ "$EVENT_TYPE" != "null" ]; then
   curl -s -X POST \
     -H "Content-Type: application/json" \
-    -d "{\"expression\":\"$EVENT_TYPE\"}" \
-    http://127.0.0.1:${PORT}/expression > /dev/null 2>&1 || true
+    -d "$INPUT" \
+    http://127.0.0.1:${PORT}/event > /dev/null 2>&1 || true
 fi
 
