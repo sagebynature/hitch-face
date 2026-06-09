@@ -1,5 +1,8 @@
 # Hitch Face Configuration
 
+# Enable bouncing window movement triggered by Hitch events (default: false)
+movement_enabled = false
+
 # Movement speed multiplier for the bouncing face (default: 1.0)
 speed = 1.0
 
@@ -8,3 +11,6 @@ interval_ms = 100
 
 # Port for the HTTP server listening for event updates (default: 8888)
 port = 8888
+
+# Ticker scroll speed in seconds per cycle — lower is faster (default: 15)
+ticker_speed_s = 5

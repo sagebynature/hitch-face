@@ -135,7 +135,7 @@ function resetToIdle() {
       container.classList.add('drawer-open');
     }
   }
-  if (statusLabel) statusLabel.textContent = 'STANDBY';
+  // if (statusLabel) statusLabel.textContent = 'STANDBY';
 }
 
 function handleHitchEvent(envelope) {
@@ -147,10 +147,10 @@ function handleHitchEvent(envelope) {
 
   const expr = envelope.hitch_event_type;
   const config = eventMap[expr];
-  
+
   // Play robot sound
   playRobotSound(expr);
-  
+
   // Extract and update metadata UI elements
   const metadata = extractMetadata(envelope);
   if (hudHeader) {
@@ -210,6 +210,12 @@ function handleHitchEvent(envelope) {
 }
 
 if (ipcRenderer) {
+  ipcRenderer.on('apply-config', (event, config) => {
+    if (config.ticker_speed_s !== undefined) {
+      document.documentElement.style.setProperty('--ticker-speed', `${config.ticker_speed_s}s`);
+    }
+  });
+
   ipcRenderer.on('set-expression', (event, expr) => {
     // Synthesize compatibility envelope
     const envelope = {

@@ -1,4 +1,48 @@
+# Dependencies
 node_modules/
+
+# Electron build output
+dist/
+out/
+build/
+release/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.pkg
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Runtime / temp
+.cache/
+tmp/
+temp/
+
+# Project-specific tooling
 .superpowers/
 .omx/
-.DS_Store
+.omo/
+

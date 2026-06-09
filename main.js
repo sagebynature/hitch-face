@@ -13,7 +13,9 @@ let vy = 30;
 let appConfig = {
   speed: 1.0,
   interval_ms: 100,
-  port: 8888
+  port: 8888,
+  ticker_speed_s: 15,
+  movement_enabled: false
 };
 
 const actionStartEvents = [
@@ -40,7 +42,9 @@ function loadConfig() {
   const defaultConfig = {
     speed: 1.0,
     interval_ms: 100,
-    port: 8888
+    port: 8888,
+    ticker_speed_s: 15,
+    movement_enabled: false
   };
   const configPath = path.join(app.getPath('home'), '.config', 'hitch-face', 'config.toml');
   if (!fs.existsSync(configPath)) {
@@ -65,6 +69,10 @@ function loadConfig() {
           config.interval_ms = parseInt(value, 10);
         } else if (key === 'port') {
           config.port = parseInt(value, 10);
+        } else if (key === 'ticker_speed_s') {
+          config.ticker_speed_s = parseFloat(value);
+        } else if (key === 'movement_enabled') {
+          config.movement_enabled = value === 'true';
         }
       }
     }
@@ -93,6 +101,12 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('apply-config', {
+      ticker_speed_s: appConfig.ticker_speed_s
+    });
+  });
 
   mainWindow.on('closed', () => {
     stopBouncing();
@@ -220,10 +234,12 @@ const server = http.createServer((req, res) => {
           console.log(`Event processed: ${expr}`);
 
           // Control window bouncing movement based on event type
-          if (actionStartEvents.includes(expr)) {
-            startBouncing();
-          } else if (actionStopEvents.includes(expr)) {
-            stopBouncing();
+          if (appConfig.movement_enabled) {
+            if (actionStartEvents.includes(expr)) {
+              startBouncing();
+            } else if (actionStopEvents.includes(expr)) {
+              stopBouncing();
+            }
           }
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });

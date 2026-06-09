@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Hitch BMO</title>
@@ -8,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div id="app-container" class="state-idle">
     <div class="bmo-relative-container">
@@ -24,96 +26,87 @@
 
       <!-- BMO Main Body (Draggable) -->
       <div class="bmo-body">
-      <!-- Side Text printed on BMO's body -->
-      <div class="bmo-brand-left">B</div>
-      <div class="bmo-brand-right">MO</div>
+        <!-- Side Text printed on BMO's body -->
+        <div class="bmo-brand-left">B</div>
+        <div class="bmo-brand-right">MO</div>
 
-      <!-- Screen Section -->
-      <div class="bmo-screen-bezel">
-        <div class="bmo-screen">
-          <div class="scanline"></div>
-          
-          <!-- Screen HUD Details -->
-          <div class="hud-header"></div>
-          
-          <!-- Face -->
-          <div class="bmo-face">
-            <div class="bmo-eyes">
-              <div class="bmo-eye left">
-                <div class="bmo-pupil"></div>
-                <div class="bmo-eye-symbol"></div>
+        <!-- Screen Section -->
+        <div class="bmo-screen-bezel">
+          <div class="bmo-screen">
+            <div class="scanline"></div>
+
+            <!-- Screen HUD Details -->
+            <div class="hud-header"></div>
+
+            <!-- Face -->
+            <div class="bmo-face">
+              <div class="bmo-eyes">
+                <div class="bmo-eye left">
+                  <div class="bmo-pupil"></div>
+                  <div class="bmo-eye-symbol"></div>
+                </div>
+                <div class="bmo-eye right">
+                  <div class="bmo-pupil"></div>
+                  <div class="bmo-eye-symbol"></div>
+                </div>
               </div>
-              <div class="bmo-eye right">
-                <div class="bmo-pupil"></div>
-                <div class="bmo-eye-symbol"></div>
-              </div>
+
+              <div class="bmo-mouth"></div>
             </div>
-            
-            <div class="bmo-mouth"></div>
-          </div>
 
-          <!-- Status Indicator (retro LCD style) -->
-          <div class="status-panel">
+            <!-- Status Indicator (retro LCD style) -->
+            <!-- <div class="status-panel">
             <span class="status-label">STANDBY</span>
+          </div> -->
+
+            <!-- Scrolling Ticker at bottom of Screen -->
+            <div class="screen-ticker">
+              <div class="ticker-wrap"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cartridge Slot -->
+        <div class="bmo-cartridge-slot"></div>
+
+        <!-- Controls Area -->
+        <div class="bmo-controls">
+          <div class="bmo-controls-row">
+            <!-- D-Pad -->
+            <div class="bmo-dpad">
+              <div class="dpad-axis horizontal"></div>
+              <div class="dpad-axis vertical"></div>
+              <div class="dpad-center"></div>
+            </div>
+
+            <!-- Speaker Grill -->
+            <div class="bmo-speaker">
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bmo-buttons">
+              <div class="btn-yellow"></div>
+              <div class="btn-red"></div>
+            </div>
           </div>
 
-          <!-- Scrolling Ticker at bottom of Screen -->
-          <div class="screen-ticker">
-            <div class="ticker-wrap"></div>
+          <div class="bmo-controls-row-bottom">
+            <!-- Blue Triangle Button & Green Circle Button -->
+            <div class="btn-triangle-blue"></div>
+            <div class="btn-green-small"></div>
           </div>
         </div>
       </div>
 
-      <!-- Cartridge Slot -->
-      <div class="bmo-cartridge-slot"></div>
 
-      <!-- Controls Area -->
-      <div class="bmo-controls">
-        <div class="bmo-controls-row">
-          <!-- D-Pad -->
-          <div class="bmo-dpad">
-            <div class="dpad-axis horizontal"></div>
-            <div class="dpad-axis vertical"></div>
-            <div class="dpad-center"></div>
-          </div>
-          
-          <!-- Speaker Grill -->
-          <div class="bmo-speaker">
-            <div class="speaker-line"></div>
-            <div class="speaker-line"></div>
-            <div class="speaker-line"></div>
-            <div class="speaker-line"></div>
-          </div>
+    </div> <!-- Close bmo-relative-container -->
+  </div> <!-- Close app-container -->
 
-          <!-- Action Buttons -->
-          <div class="bmo-buttons">
-            <div class="btn-yellow"></div>
-            <div class="btn-red"></div>
-          </div>
-        </div>
-
-        <div class="bmo-controls-row-bottom">
-          <!-- Blue Triangle Button & Green Circle Button -->
-          <div class="btn-triangle-blue"></div>
-          <div class="btn-green-small"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Limbs (Outer details for premium feel) -->
-    <div class="bmo-limbs">
-      <div class="bmo-arm left"></div>
-      <div class="bmo-arm right"></div>
-      <div class="bmo-leg left">
-        <div class="foot"></div>
-      </div>
-      <div class="bmo-leg right">
-        <div class="foot"></div>
-      </div>
-    </div> <!-- Close bmo-limbs -->
-  </div> <!-- Close bmo-relative-container -->
-</div> <!-- Close app-container -->
-
-<script src="renderer.js"></script>
+  <script src="renderer.js"></script>
 </body>
+
 </html>

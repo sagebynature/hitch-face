@@ -108,7 +108,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 22px 15px 12px 15px;
   box-sizing: border-box;
   overflow: hidden;
@@ -139,7 +139,7 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 0;
   gap: 18px;
   transition: transform 0.3s ease;
 }
@@ -192,6 +192,8 @@ body {
 
 /* Status Panel (Retro LCD Label) */
 .status-panel {
+  position: absolute;
+  bottom: 22px;
   padding: 2px 10px;
   background: rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -337,117 +339,6 @@ body {
   box-shadow: 0 1.5px 0 #378631;
 }
 
-/* BMO Limbs */
-.bmo-limbs {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 450px;
-  height: 450px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Arms */
-.bmo-arm {
-  position: absolute;
-  top: 180px;
-  width: 48px;
-  height: 10px;
-  background: var(--bmo-casing);
-  border: 2px solid #285e57;
-  border-radius: 5px;
-  transition: transform 0.3s;
-}
-.bmo-arm.left {
-  left: 28px;
-  transform-origin: right center;
-  transform: rotate(15deg);
-}
-.bmo-arm.right {
-  right: 28px;
-  transform-origin: left center;
-  transform: rotate(-15deg);
-}
-
-/* Legs */
-.bmo-leg {
-  position: absolute;
-  top: 395px;
-  width: 12px;
-  height: 40px;
-  background: var(--bmo-casing-dark);
-  border: 2px solid #285e57;
-  border-bottom: none;
-}
-.bmo-leg.left {
-  left: 110px;
-  transform-origin: top center;
-}
-.bmo-leg.right {
-  right: 110px;
-  transform-origin: top center;
-}
-.foot {
-  position: absolute;
-  bottom: -4px;
-  left: -4px;
-  width: 20px;
-  height: 8px;
-  background: #243432;
-  border-radius: 4px;
-}
-
-/* Active State Animations (Limbs wave/dangle when bouncing) */
-.state-session .bmo-arm.left,
-.state-turn .bmo-arm.left,
-.state-tool .bmo-arm.left,
-.state-subagent .bmo-arm.left,
-.state-llm .bmo-arm.left {
-  animation: arm-wave-l 0.8s ease-in-out infinite alternate;
-}
-
-.state-session .bmo-arm.right,
-.state-turn .bmo-arm.right,
-.state-tool .bmo-arm.right,
-.state-subagent .bmo-arm.right,
-.state-llm .bmo-arm.right {
-  animation: arm-wave-r 0.8s ease-in-out infinite alternate;
-}
-
-.state-session .bmo-leg.left,
-.state-turn .bmo-leg.left,
-.state-tool .bmo-leg.left,
-.state-subagent .bmo-leg.left,
-.state-llm .bmo-leg.left {
-  animation: leg-swing-l 0.6s ease-in-out infinite alternate;
-}
-
-.state-session .bmo-leg.right,
-.state-turn .bmo-leg.right,
-.state-tool .bmo-leg.right,
-.state-subagent .bmo-leg.right,
-.state-llm .bmo-leg.right {
-  animation: leg-swing-r 0.6s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes arm-wave-l {
-  0% { transform: rotate(35deg); }
-  100% { transform: rotate(-10deg); }
-}
-@keyframes arm-wave-r {
-  0% { transform: rotate(-35deg); }
-  100% { transform: rotate(10deg); }
-}
-@keyframes leg-swing-l {
-  0% { transform: rotate(-10deg); }
-  100% { transform: rotate(15deg); }
-}
-@keyframes leg-swing-r {
-  0% { transform: rotate(10deg); }
-  100% { transform: rotate(-15deg); }
-}
 
 /* ==========================================================================
    STATE THEMES & EXPRESSIONS
@@ -989,7 +880,9 @@ body {
 .ticker-wrap {
   white-space: nowrap;
   display: inline-block;
-  animation: ticker 15s linear infinite;
+  position: absolute;
+  left: 100%;
+  animation: ticker var(--ticker-speed, 15s) linear infinite;
   font-family: 'Share Tech Mono', monospace;
   font-size: 8px;
   color: var(--face-color);
@@ -997,8 +890,8 @@ body {
 }
 
 @keyframes ticker {
-  0% { transform: translate3d(100%, 0, 0); }
-  100% { transform: translate3d(-100%, 0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(calc(-100% - 260px), 0, 0); }
 }
 
 /* Slide BMO Face upward when screen ticker is active */
