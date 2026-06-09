@@ -7,7 +7,7 @@ set -e
 INPUT=$(cat)
 
 # Extract the hitch_event_type from the input JSON
-EVENT_TYPE=$(echo "$INPUT" | /usr/bin/jq -r '.hitch_event_type')
+EVENT_TYPE=$(echo "$INPUT" | jq -r '.hitch_event_type' 2>/dev/null || echo "null")
 
 # Default port
 PORT=8888
@@ -16,7 +16,7 @@ PORT=8888
 CONFIG_PATH="$HOME/.config/hitch-face/config.toml"
 if [ -f "$CONFIG_PATH" ]; then
   # Parse port = <number> from the config file
-  parsed_port=$(grep -E '^\s*port\s*=' "$CONFIG_PATH" | head -n 1 | cut -d'=' -f2 | tr -d '[:space:]')
+  parsed_port=$(grep -E '^\s*port\s*=' "$CONFIG_PATH" | head -n 1 | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[:space:]')
   if [ -n "$parsed_port" ]; then
     PORT="$parsed_port"
   fi
@@ -24,9 +24,9 @@ fi
 
 # If the input is non-empty, POST the entire envelope to the /event endpoint
 if [ -n "$INPUT" ] && [ "$EVENT_TYPE" != "null" ]; then
-  curl -s -X POST \
+  printf '%s' "$INPUT" | curl -s -X POST \
     -H "Content-Type: application/json" \
-    -d "$INPUT" \
+    -d @- \
     http://127.0.0.1:${PORT}/event > /dev/null 2>&1 || true
 fi
 
