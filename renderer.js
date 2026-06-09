@@ -1,7 +1,8 @@
-const { ipcRenderer } = require('electron');
+const electron = require('electron');
+const ipcRenderer = (electron && typeof electron === 'object') ? electron.ipcRenderer : null;
 
-const container = document.getElementById('app-container');
-const statusLabel = document.querySelector('.status-label');
+const container = typeof document !== 'undefined' ? document.getElementById('app-container') : null;
+const statusLabel = typeof document !== 'undefined' ? document.querySelector('.status-label') : null;
 
 let resetTimeout = null;
 
@@ -119,37 +120,46 @@ function playSweep(time, startFreq, endFreq, duration, type = 'sine') {
 
 // Reset to default idle standby state
 function resetToIdle() {
-  container.className = 'state-idle';
-  statusLabel.textContent = 'STANDBY';
+  if (container) container.className = 'state-idle';
+  if (statusLabel) statusLabel.textContent = 'STANDBY';
 }
 
-ipcRenderer.on('set-expression', (event, expr) => {
-  // Clear any pending transition timeouts
-  if (resetTimeout) {
-    clearTimeout(resetTimeout);
-    resetTimeout = null;
-  }
+if (ipcRenderer) {
+  ipcRenderer.on('set-expression', (event, expr) => {
+    // Clear any pending transition timeouts
+    if (resetTimeout) {
+      clearTimeout(resetTimeout);
+      resetTimeout = null;
+    }
 
-  const config = eventMap[expr];
-  if (!config) {
-    // If unknown expression received, show it as generic raw state
-    container.className = 'state-idle';
-    statusLabel.textContent = expr.toUpperCase().substring(0, 16);
-    return;
-  }
+    const config = eventMap[expr];
+    if (!config) {
+      // If unknown expression received, show it as generic raw state
+      if (container) container.className = 'state-idle';
+      if (statusLabel) statusLabel.textContent = expr.toUpperCase().substring(0, 16);
+      return;
+    }
 
-  // Play robot sound
-  playRobotSound(expr);
+    // Play robot sound
+    playRobotSound(expr);
 
-  // Update classes
-  container.className = `${config.state} ${config.className}`;
-  statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
+    // Update classes
+    if (container) container.className = `${config.state} ${config.className}`;
+    if (statusLabel) statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
 
-  // If the expression has a limited duration, set a timer to return to idle
-  if (!config.sticky && config.duration) {
-    resetTimeout = setTimeout(() => {
-      resetToIdle();
-    }, config.duration);
-  }
-});
+    // If the expression has a limited duration, set a timer to return to idle
+    if (!config.sticky && config.duration) {
+      resetTimeout = setTimeout(() => {
+        resetToIdle();
+      }, config.duration);
+    }
+  });
+}
 
+function extractMetadata(envelope) {
+  return {};
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { extractMetadata };
+}
