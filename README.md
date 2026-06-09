@@ -35,8 +35,8 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 ### Option A — Run from source
 
 ```bash
-git clone <repo-url>
-cd hitch-face
+git clone https://github.com/sagebynature/hitch
+cd hitch
 npm install
 npm start
 ```
