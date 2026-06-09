@@ -46,7 +46,6 @@ npm start
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch-face/main/install.sh | sh
-hitch-face
 ```
 
 This copies the extension to:
