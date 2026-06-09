@@ -3,19 +3,29 @@ const path = require('path');
 const http = require('http');
 const fs = require('fs');
 
-let mainWindow;
-let bounceInterval = null;
-let originalX = null;
-let originalY = null;
-let vx = 40;
-let vy = 30;
+const sessions = new Map();
+
+ipcMain.on('shutdown-session', (event, sessionId) => {
+  const session = sessions.get(sessionId);
+  if (session) {
+    if (session.window && !session.window.isDestroyed()) {
+      session.window.close();
+    }
+    if (session.bounceInterval) {
+      clearInterval(session.bounceInterval);
+    }
+    sessions.delete(sessionId);
+  }
+});
 
 let appConfig = {
   speed: 1.0,
   interval_ms: 100,
   port: 8888,
   ticker_speed_s: 15,
-  movement_enabled: false
+  buffer_size: 500,
+  movement_enabled: false,
+  colors: {}
 };
 
 const actionStartEvents = [
@@ -44,7 +54,9 @@ function loadConfig() {
     interval_ms: 100,
     port: 8888,
     ticker_speed_s: 15,
-    movement_enabled: false
+    buffer_size: 500,
+    movement_enabled: false,
+    colors: {}
   };
   const configPath = path.join(app.getPath('home'), '.config', 'hitch-face', 'config.toml');
   if (!fs.existsSync(configPath)) {
@@ -54,25 +66,38 @@ function loadConfig() {
     const content = fs.readFileSync(configPath, 'utf8');
     const config = { ...defaultConfig };
     const lines = content.split(/\r?\n/);
+    let currentSection = '';
+
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('[')) {
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      
+      if (trimmed.startsWith('[')) {
+        currentSection = trimmed.replace(/\[|\]/g, '').trim();
         continue;
       }
+      
       const parts = trimmed.split('=');
       if (parts.length >= 2) {
         const key = parts[0].trim();
-        const value = parts.slice(1).join('=').trim();
-        if (key === 'speed') {
-          config.speed = parseFloat(value);
-        } else if (key === 'interval_ms') {
-          config.interval_ms = parseInt(value, 10);
-        } else if (key === 'port') {
-          config.port = parseInt(value, 10);
-        } else if (key === 'ticker_speed_s') {
-          config.ticker_speed_s = parseFloat(value);
-        } else if (key === 'movement_enabled') {
-          config.movement_enabled = value === 'true';
+        const value = parts.slice(1).join('=').trim().replace(/"/g, '');
+        
+        if (currentSection === 'colors') {
+          config.colors[key] = value;
+        } else {
+          if (key === 'speed') {
+            config.speed = parseFloat(value);
+          } else if (key === 'interval_ms') {
+            config.interval_ms = parseInt(value, 10);
+          } else if (key === 'port') {
+            config.port = parseInt(value, 10);
+          } else if (key === 'ticker_speed_s') {
+            config.ticker_speed_s = parseFloat(value);
+          } else if (key === 'buffer_size') {
+            config.buffer_size = parseInt(value, 10);
+          } else if (key === 'movement_enabled') {
+            config.movement_enabled = value === 'true';
+          }
         }
       }
     }
@@ -83,8 +108,10 @@ function loadConfig() {
   }
 }
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
+function createSessionWindow(sessionId, harness) {
+  if (sessions.has(sessionId)) return sessions.get(sessionId);
+
+  const win = new BrowserWindow({
     width: 750,
     height: 500,
     frame: false,
@@ -100,45 +127,73 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  const sessionState = {
+    window: win,
+    bounceInterval: null,
+    originalX: null,
+    originalY: null,
+    vx: 40,
+    vy: 30,
+    isReady: false,
+    eventBuffer: []
+  };
+  sessions.set(sessionId, sessionState);
 
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.send('apply-config', {
-      ticker_speed_s: appConfig.ticker_speed_s
+  win.loadFile(path.join(__dirname, 'index.html'));
+
+  win.webContents.on('did-finish-load', () => {
+    sessionState.isReady = true;
+    win.webContents.send('apply-config', {
+      ticker_speed_s: appConfig.ticker_speed_s,
+      buffer_size: appConfig.buffer_size,
+      colors: appConfig.colors
     });
+    
+    win.webContents.send('init-session', { sessionId, harness });
+
+    // Flush buffered events
+    while (sessionState.eventBuffer.length > 0) {
+      const envelope = sessionState.eventBuffer.shift();
+      win.webContents.send('hitch-event', envelope);
+    }
   });
 
-  mainWindow.on('closed', () => {
-    stopBouncing();
-    mainWindow = null;
+  win.on('closed', () => {
+    stopBouncing(sessionId);
+    sessions.delete(sessionId);
   });
+
+  return sessionState;
 }
 
-function startBouncing() {
-  if (bounceInterval) return;
-  if (!mainWindow) return;
+function startBouncing(sessionId) {
+  const session = sessions.get(sessionId);
+  if (!session || !session.window || session.bounceInterval) return;
 
-  const pos = mainWindow.getPosition();
-  originalX = pos[0];
-  originalY = pos[1];
+  const win = session.window;
+  const pos = win.getPosition();
+  session.originalX = pos[0];
+  session.originalY = pos[1];
 
   // Randomize initial direction (adjusted for speed)
-  vx = (Math.random() > 0.5 ? 1 : -1) * 16 * appConfig.speed;
-  vy = (Math.random() > 0.5 ? 1 : -1) * 12 * appConfig.speed;
+  session.vx = (Math.random() > 0.5 ? 1 : -1) * 16 * appConfig.speed;
+  session.vy = (Math.random() > 0.5 ? 1 : -1) * 12 * appConfig.speed;
 
-  bounceInterval = setInterval(() => {
-    if (!mainWindow) return;
+  session.bounceInterval = setInterval(() => {
+    if (win.isDestroyed()) {
+      stopBouncing(sessionId);
+      return;
+    }
     const primaryDisplay = screen.getPrimaryDisplay();
     const { x: minX, y: minY, width: screenW, height: screenH } = primaryDisplay.bounds;
     const maxX = minX + screenW;
     const maxY = minY + screenH;
 
-    let [x, y] = mainWindow.getPosition();
-    x += vx;
-    y += vy;
+    let [x, y] = win.getPosition();
+    x += session.vx;
+    y += session.vy;
 
     // Visual bounding box offsets relative to the 500x500 window
-    // (BMO body: 310x370, arms: 48px, legs: 40px, centered inside 450x450 container)
     const padTop = 65;     // top of BMO casing
     const padBottom = 460; // bottom of BMO's feet
     const padLeft = 175;    // left arm tip
@@ -147,30 +202,31 @@ function startBouncing() {
     // Bounce off screen edges using visual bounds
     if (x + padLeft <= minX) {
       x = minX - padLeft;
-      vx = -vx;
+      session.vx = -session.vx;
     } else if (x + padRight >= maxX) {
       x = maxX - padRight;
-      vx = -vx;
+      session.vx = -session.vx;
     }
 
     if (y + padTop <= minY) {
       y = minY - padTop;
-      vy = -vy;
+      session.vy = -session.vy;
     } else if (y + padBottom >= maxY) {
       y = maxY - padBottom;
-      vy = -vy;
+      session.vy = -session.vy;
     }
 
-    mainWindow.setPosition(Math.round(x), Math.round(y));
+    win.setPosition(Math.round(x), Math.round(y));
   }, appConfig.interval_ms);
 }
 
-function stopBouncing() {
-  if (bounceInterval) {
-    clearInterval(bounceInterval);
-    bounceInterval = null;
-    if (mainWindow && originalX !== null && originalY !== null) {
-      mainWindow.setPosition(originalX, originalY);
+function stopBouncing(sessionId) {
+  const session = sessions.get(sessionId);
+  if (session && session.bounceInterval) {
+    clearInterval(session.bounceInterval);
+    session.bounceInterval = null;
+    if (session.window && !session.window.isDestroyed() && session.originalX !== null && session.originalY !== null) {
+      session.window.setPosition(session.originalX, session.originalY);
     }
   }
 }
@@ -228,17 +284,25 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({ status: 'error', reason: 'Missing event type (hitch_event_type or expression)' }));
           return;
         }
+
+        const harness = envelope.harness || 'default';
+        const sessionId = envelope.session_id || envelope.payload?.session?.id || envelope.payload?.session_id || 'default-session';
         
-        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-          mainWindow.webContents.send('hitch-event', envelope);
-          console.log(`Event processed: ${expr}`);
+        const sessionState = createSessionWindow(sessionId, harness);
+        const win = sessionState.window;
+        
+        if (!sessionState.isReady) {
+          sessionState.eventBuffer.push(envelope);
+        } else if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+          win.webContents.send('hitch-event', envelope);
+          console.log(`Event processed for ${sessionId}: ${expr}`);
 
           // Control window bouncing movement based on event type
           if (appConfig.movement_enabled) {
             if (actionStartEvents.includes(expr)) {
-              startBouncing();
+              startBouncing(sessionId);
             } else if (actionStopEvents.includes(expr)) {
-              stopBouncing();
+              stopBouncing(sessionId);
             }
           }
         }
@@ -266,15 +330,12 @@ server.on('error', (err) => {
 
 app.whenReady().then(() => {
   appConfig = loadConfig();
-  createWindow();
   server.listen(appConfig.port, '127.0.0.1', () => {
     console.log(`HTTP Server listening on http://127.0.0.1:${appConfig.port}`);
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    // Windows are created on first event, so we don't automatically create one here anymore.
   });
 });
 

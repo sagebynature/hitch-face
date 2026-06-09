@@ -35,6 +35,12 @@
           <div class="bmo-screen">
             <div class="scanline"></div>
 
+            <!-- Screen Terminal Background -->
+            <div class="screen-terminal">
+              <div class="session-id-header">SESSION_ID: <span id="session-id-value">PENDING</span></div>
+              <div id="screen-console-content" class="screen-console-content"></div>
+            </div>
+
             <!-- Screen HUD Details -->
             <div class="hud-header"></div>
 
@@ -96,8 +102,8 @@
 
           <div class="bmo-controls-row-bottom">
             <!-- Blue Triangle Button & Green Circle Button -->
-            <div class="btn-triangle-blue"></div>
-            <div class="btn-green-small"></div>
+            <div class="btn-triangle-blue" id="btn-power" title="Power"></div>
+            <div class="btn-green-small" id="btn-sound" title="Toggle Sound"></div>
           </div>
         </div>
       </div>

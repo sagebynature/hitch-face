@@ -2,14 +2,19 @@ const electron = require('electron');
 const ipcRenderer = (electron && typeof electron === 'object') ? electron.ipcRenderer : null;
 
 const container = typeof document !== 'undefined' ? document.getElementById('app-container') : null;
+const sessionValue = typeof document !== 'undefined' ? document.getElementById('session-id-value') : null;
 const statusLabel = typeof document !== 'undefined' ? document.querySelector('.status-label') : null;
 const hudHeader = typeof document !== 'undefined' ? document.querySelector('.hud-header') : null;
 const tickerWrap = typeof document !== 'undefined' ? document.querySelector('.ticker-wrap') : null;
 const consoleContent = typeof document !== 'undefined' ? document.querySelector('.console-content') : null;
+const screenConsoleContent = typeof document !== 'undefined' ? document.getElementById('screen-console-content') : null;
 const consoleFooter = typeof document !== 'undefined' ? document.querySelector('.console-footer') : null;
 const btnRed = typeof document !== 'undefined' ? document.querySelector('.btn-red') : null;
+const screenTerminal = typeof document !== 'undefined' ? document.querySelector('.screen-terminal') : null;
 
 let resetTimeout = null;
+let consoleBuffer = [];
+let appBufferSize = 500;
 
 // Map Hitch event types to styling categories (states) and specific classes
 const eventMap = {
@@ -50,8 +55,10 @@ const eventMap = {
 
 // Web Audio API Sound Generator
 let audioCtx = null;
+let soundEnabled = true;
 
 function playRobotSound(expr) {
+  if (!soundEnabled) return;
   if (typeof window === 'undefined') {
     return;
   }
@@ -159,7 +166,7 @@ function handleHitchEvent(envelope) {
   if (tickerWrap) {
     tickerWrap.textContent = metadata.tickerText;
   }
-  if (consoleContent) {
+  if (consoleContent || screenConsoleContent) {
     const formattedLines = metadata.consoleText.split('\n').map(line => {
       const colonIndex = line.indexOf(':');
       if (colonIndex !== -1) {
@@ -169,7 +176,24 @@ function handleHitchEvent(envelope) {
       }
       return line;
     });
-    consoleContent.innerHTML = formattedLines.join('<br>');
+
+    if (consoleBuffer.length > 0) {
+      consoleBuffer.push('<br><span>---</span>');
+    }
+    consoleBuffer.push(...formattedLines);
+    if (consoleBuffer.length > appBufferSize) {
+      consoleBuffer = consoleBuffer.slice(-appBufferSize);
+    }
+    const formattedHtml = consoleBuffer.join('<br>');
+
+    if (consoleContent) {
+      consoleContent.innerHTML = formattedHtml;
+      consoleContent.scrollTop = consoleContent.scrollHeight;
+    }
+    if (screenConsoleContent) {
+      screenConsoleContent.innerHTML = formattedHtml;
+      if (screenTerminal) screenTerminal.scrollTop = screenTerminal.scrollHeight;
+    }
   }
   if (consoleFooter) {
     consoleFooter.textContent = `Status: ${metadata.event}`;
@@ -209,10 +233,39 @@ function handleHitchEvent(envelope) {
   }
 }
 
+let appColors = {};
+let currentSessionId = null;
+
 if (ipcRenderer) {
   ipcRenderer.on('apply-config', (event, config) => {
     if (config.ticker_speed_s !== undefined) {
       document.documentElement.style.setProperty('--ticker-speed', `${config.ticker_speed_s}s`);
+    }
+    if (config.buffer_size !== undefined) {
+      appBufferSize = config.buffer_size;
+    }
+    if (config.colors) {
+      appColors = config.colors;
+    }
+  });
+
+  ipcRenderer.on('init-session', (event, { sessionId, harness }) => {
+    currentSessionId = sessionId;
+    if (sessionValue) {
+      sessionValue.textContent = sessionId;
+    }
+    
+    // Apply harness color if configured
+    if (harness && appColors[harness]) {
+      const color = appColors[harness];
+      // Set the color variables on the document
+      document.documentElement.style.setProperty('--bmo-casing', color);
+      // We can also compute darker/lighter variants if needed, or just let them stay default.
+      // But standard BMO has dark and light variants for gradients.
+      // A simple fallback is to use the custom color for all of them, or compute them.
+      // For simplicity, we just set the main casing.
+      document.documentElement.style.setProperty('--bmo-casing-dark', color);
+      document.documentElement.style.setProperty('--bmo-casing-light', color);
     }
   });
 
@@ -236,6 +289,39 @@ if (btnRed) {
   btnRed.addEventListener('click', () => {
     if (container) {
       container.classList.toggle('drawer-open');
+    }
+  });
+}
+
+const btnPower = typeof document !== 'undefined' ? document.getElementById('btn-power') : null;
+
+// Bind blue triangle button to power down window for session
+if (btnPower && ipcRenderer) {
+  btnPower.addEventListener('click', () => {
+    if (currentSessionId) {
+      ipcRenderer.send('shutdown-session', currentSessionId);
+    }
+  });
+}
+
+const btnSound = typeof document !== 'undefined' ? document.getElementById('btn-sound') : null;
+
+// Bind sound button click to toggle sound on/off
+if (btnSound) {
+  btnSound.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    if (container) {
+      if (soundEnabled) {
+        container.classList.remove('sound-disabled');
+        // Play a little confirmation blip if enabling
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          playBeep(audioCtx.currentTime, 600, 800, 0.08, 'sine');
+        } catch (e) {}
+      } else {
+        container.classList.add('sound-disabled');
+      }
     }
   });
 }
