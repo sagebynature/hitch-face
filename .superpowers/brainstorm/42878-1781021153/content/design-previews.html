@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hitch Face - Design Previews</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    /* Styling for the Visual Companion Page */
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      font-weight: 800;
+      background: linear-gradient(to right, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      margin-bottom: 32px;
+      text-align: center;
+      max-width: 600px;
+    }
+
+    /* Interactive Preview Container */
+    .preview-container {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(30, 41, 59, 0.5);
+      padding: 40px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    /* Tabs/Controls for Preview */
+    .controls-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 380px;
+    }
+
+    .concept-btn {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      color: #94a3b8;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-btn:hover {
+      background: #334155;
+      color: #f1f5f9;
+      transform: translateY(-2px);
+    }
+
+    .concept-btn.active {
+      background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    }
+
+    .concept-btn h3 {
+      margin: 0 0 6px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .concept-btn p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      opacity: 0.8;
+    }
+
+    /* BMO Render Area */
+    .bmo-wrapper {
+      position: relative;
+      width: 450px;
+      height: 450px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111827;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      box-shadow: inset 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    /* BMO CSS variables matching hitch-face style.css */
+    :root {
+      --bg-color: #b8e2c8;
+      --face-color: #1e352f;
+      --bmo-casing: #4ca8a1;
+      --bmo-casing-dark: #3a8e87;
+      --bmo-casing-light: #5dbdb5;
+    }
+
+    /* BMO Body */
+    .bmo-body {
+      position: relative;
+      width: 280px;
+      height: 340px;
+      background: linear-gradient(135deg, var(--bmo-casing) 0%, var(--bmo-casing-dark) 100%);
+      border-radius: 28px;
+      border: 3px solid #285e57;
+      box-shadow: 
+        inset 0 4px 0 var(--bmo-casing-light),
+        0 10px 30px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 15px;
+      box-sizing: border-box;
+      z-index: 5;
+      transition: transform 0.5s ease;
+    }
+
+    .bmo-brand-left, .bmo-brand-right {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-weight: 800;
+      font-size: 28px;
+      color: rgba(19, 45, 41, 0.2);
+      letter-spacing: -2px;
+      pointer-events: none;
+      writing-mode: vertical-lr;
+      text-orientation: upright;
+    }
+    .bmo-brand-left { left: 10px; }
+    .bmo-brand-right { right: 10px; }
+
+    .bmo-screen-bezel {
+      width: 240px;
+      height: 170px;
+      background: #2b675e;
+      border-radius: 18px;
+      padding: 6px;
+      box-sizing: border-box;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.4);
+    }
+
+    .bmo-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-color);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 12px 10px 12px;
+      box-sizing: border-box;
+      overflow: hidden;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.15);
+      transition: background-color 0.5s ease;
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      opacity: 0.7;
+      animation: scan 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scan {
+      0% { top: 0; }
+      100% { top: 100%; }
+    }
+
+    .bmo-face {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: 8px;
+      gap: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .bmo-eyes {
+      display: flex;
+      justify-content: space-around;
+      width: 130px;
+    }
+
+    .bmo-eye {
+      position: relative;
+      width: 24px;
+      height: 24px;
+    }
+
+    .bmo-pupil {
+      width: 14px;
+      height: 20px;
+      background: var(--face-color);
+      border-radius: 50%;
+      margin: 2px auto;
+    }
+
+    .bmo-mouth {
+      width: 18px;
+      height: 6px;
+      border-bottom: 3.5px solid var(--face-color);
+      border-radius: 50%;
+    }
+
+    .status-panel {
+      padding: 2px 8px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--face-color);
+      opacity: 0.8;
+    }
+
+    .bmo-cartridge-slot {
+      position: relative;
+      width: 140px;
+      height: 7px;
+      background: #1f4f47;
+      border-radius: 3px;
+      margin: 8px auto;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* Controls */
+    .bmo-controls {
+      width: 100%;
+      padding: 0 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bmo-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 45px;
+    }
+
+    .bmo-dpad {
+      position: relative;
+      width: 44px;
+      height: 44px;
+    }
+    .dpad-axis {
+      position: absolute;
+      background: #243432;
+      border-radius: 2px;
+      box-shadow: 0 1.5px 0 rgba(0,0,0,0.3);
+    }
+    .dpad-axis.horizontal {
+      width: 44px;
+      height: 12px;
+      top: 16px;
+      left: 0;
+    }
+    .dpad-axis.vertical {
+      width: 12px;
+      height: 44px;
+      top: 0;
+      left: 16px;
+    }
+    .dpad-center {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      top: 16px;
+      left: 16px;
+      background: #1b2625;
+      z-index: 3;
+    }
+
+    .bmo-speaker {
+      display: flex;
+      gap: 3px;
+    }
+    .speaker-line {
+      width: 2.5px;
+      height: 16px;
+      background: #255850;
+      border-radius: 1px;
+    }
+
+    .bmo-buttons {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .btn-yellow {
+      width: 18px;
+      height: 18px;
+      background: #f8c630;
+      border-radius: 50%;
+      border: 1px solid #b8921e;
+      box-shadow: 0 2px 0 #b8921e;
+    }
+    .btn-red {
+      width: 22px;
+      height: 22px;
+      background: #d94343;
+      border-radius: 50%;
+      border: 1px solid #9c2e2e;
+      box-shadow: 0 2px 0 #9c2e2e;
+    }
+
+    .bmo-controls-row-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      height: 20px;
+    }
+    .btn-triangle-blue {
+      width: 16px;
+      height: 16px;
+      background: #2a6f97;
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      transform: rotate(90deg);
+      border-radius: 2px;
+      box-shadow: 0 1.5px 0 #1b4965;
+    }
+    .btn-green-small {
+      width: 10px;
+      height: 10px;
+      background: #4cb944;
+      border-radius: 50%;
+      border: 1px solid #378631;
+      box-shadow: 0 1px 0 #378631;
+    }
+
+    /* Dynamic design components */
+
+    /* Option A: Cartridge Pop-in */
+    .bmo-cartridge {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      width: 110px;
+      height: 45px;
+      background: #708090;
+      border: 2px solid #2f4f4f;
+      border-bottom: none;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 -4px 10px rgba(0,0,0,0.3);
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 4px;
+      box-sizing: border-box;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+    }
+
+    .bmo-cartridge-label {
+      width: 90px;
+      height: 18px;
+      background: #e11d48;
+      border: 1px solid #9f1239;
+      border-radius: 2px;
+      color: white;
+      font-size: 8px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .cartridge-active .bmo-cartridge {
+      transform: translateX(-50%) translateY(0px);
+    }
+
+    /* Option A Details Pop-up */
+    .cartridge-popup {
+      position: absolute;
+      top: 20px;
+      width: 200px;
+      background: #1e293b;
+      border: 2px solid #fb7185;
+      border-radius: 8px;
+      padding: 10px;
+      color: #fda4af;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .cartridge-active .bmo-cartridge:hover + .cartridge-popup,
+    .cartridge-active .cartridge-popup.visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    /* Option B: Side Console Drawer */
+    .console-drawer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 250px;
+      height: 300px;
+      background: #1e293b;
+      border: 3px solid #334155;
+      border-left: none;
+      border-top-right-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
+      z-index: 3;
+      box-sizing: border-box;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    }
+
+    .drawer-active .console-drawer {
+      transform: translate(50px, -50%);
+    }
+    .drawer-active .bmo-body {
+      transform: translateX(-90px);
+    }
+
+    .console-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #38bdf8;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .console-content {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: #cbd5e1;
+      flex-grow: 1;
+      line-height: 1.6;
+    }
+
+    .console-content span {
+      color: #60a5fa;
+    }
+
+    .console-footer {
+      font-size: 9px;
+      color: #64748b;
+      text-align: right;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    /* Option C: Screen HUD & Ticker */
+    .hud-header {
+      position: absolute;
+      top: 4px;
+      left: 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: rgba(30, 53, 47, 0.45);
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .ticker-active .hud-header {
+      opacity: 1;
+    }
+
+    /* Subtle Ticker Tape at bottom of Screen */
+    .screen-ticker {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(30, 53, 47, 0.08);
+      border-top: 1px dashed rgba(30, 53, 47, 0.2);
+      height: 18px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+      padding: 0 4px;
+    }
+
+    .ticker-active .screen-ticker {
+      opacity: 1;
+    }
+
+    .ticker-active .bmo-face {
+      transform: translateY(-5px);
+    }
+    .ticker-active .status-panel {
+      display: none;
+    }
+
+    .ticker-wrap {
+      white-space: nowrap;
+      display: inline-block;
+      animation: ticker 15s linear infinite;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--face-color);
+      font-weight: bold;
+    }
+
+    @keyframes ticker {
+      0% { transform: translate3d(100%, 0, 0); }
+      100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    /* Option D: Screen Dropdown Console Overlay */
+    .screen-dropdown {
+      position: absolute;
+      top: -120px;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: rgba(30, 53, 47, 0.95);
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+      box-sizing: border-box;
+      padding: 8px;
+      color: #92e8d1;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      line-height: 1.4;
+      transition: transform 0.4s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .dropdown-active .screen-dropdown {
+      transform: translateY(120px);
+    }
+
+    .screen-dropdown-header {
+      font-weight: bold;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .screen-dropdown-item span {
+      color: #38bdf8;
+    }
+
+    /* Instructions / Explanations */
+    .spec-details {
+      margin-top: 32px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 950px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .spec-details h3 {
+      margin-top: 0;
+      color: #38bdf8;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .spec-details p {
+      line-height: 1.6;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .spec-details ul {
+      padding-left: 20px;
+      line-height: 1.8;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    /* Interactive click triggers */
+    .btn-red, .btn-yellow {
+      cursor: pointer;
+    }
+    .btn-red:active, .btn-yellow:active {
+      transform: scale(0.9);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Interactive Hitch Face Previews</h2>
+  <p class="subtitle">Click the options below to interactively render each design concept on BMO. See how they look and react in real-time!</p>
+
+  <div class="preview-container">
+    
+    <!-- Controls on the Left -->
+    <div class="controls-panel">
+      <div class="concept-btn active" id="btn-default" onclick="selectStyle('default')">
+        <h3>Standard Standby</h3>
+        <p>Original BMO widget. Face in the center, simple LCD-style event label at the bottom of the screen.</p>
+      </div>
+
+      <div class="concept-btn" id="btn-ticker" onclick="selectStyle('ticker')">
+        <h3>1. Screen HUD & Ticker (Recommended)</h3>
+        <p><strong>Cleanest & Most Minimal.</strong> Displays a subtle harness HUD in the top left, and scrolls active payload details in a retro ticker tape at the bottom of the screen.</p>
+      </div>
+
+      <div class="concept-btn" id="btn-cartridge" onclick="selectStyle('cartridge')">
+        <h3>2. Cartridge Pop-in</h3>
+        <p><strong>Playful & Gamified.</strong> A game cartridge slides into BMO's slot labeled with the Harness. Hovering/clicking it opens a floating retro tooltip with full payload details.</p>
+      </div>
+
+      <div class="concept-btn" id="btn-drawer" onclick="selectStyle('drawer')">
+        <h3>3. Side Console Drawer</h3>
+        <p><strong>Power-User Log View.</strong> Clicking BMO's action buttons slides open a monospaced terminal logs drawer to the side, displaying structured details without cluttering BMO's face.</p>
+      </div>
+    </div>
+
+    <!-- Interactive BMO on the Right -->
+    <div class="bmo-wrapper" id="bmo-viewport">
+      
+      <!-- Option A: Cartridge Pop-in (Hidden by default, slides down into slot) -->
+      <div class="bmo-cartridge" onclick="toggleCartridgePopup(event)">
+        <div class="bmo-cartridge-label">OMP HARNESS</div>
+      </div>
+      <div class="cartridge-popup" id="cart-pop">
+        <strong>CARTRIDGE DETAILS:</strong><br>
+        • harness: omp<br>
+        • event: tool.requested<br>
+        • tool: grep_search<br>
+        • query: "hitch_event_type"
+      </div>
+
+      <!-- Option B: Side Console Drawer (Slides out from behind body) -->
+      <div class="console-drawer" id="cons-draw">
+        <div>
+          <div class="console-header">>_ Hitch Log Console</div>
+          <div class="console-content">
+            harness: <span>omp</span><br>
+            event: <span>tool.requested</span><br>
+            tool: <span>grep_search</span><br>
+            cwd: <span>~/workspace/hitch-face</span><br>
+            ---------------------------<br>
+            query: <span>"hitch_event_type"</span><br>
+            path: <span>/Users/sage/...</span>
+          </div>
+        </div>
+        <div class="console-footer">Status: Executing...</div>
+      </div>
+
+      <!-- Main BMO Body -->
+      <div class="bmo-body" id="bmo-body-el">
+        <div class="bmo-brand-left">B</div>
+        <div class="bmo-brand-right">MO</div>
+
+        <!-- Bezel -->
+        <div class="bmo-screen-bezel">
+          <div class="bmo-screen">
+            <div class="scanline"></div>
+            
+            <!-- Option C details inside the screen -->
+            <div class="hud-header">[OMP / GREP_SEARCH]</div>
+
+            <!-- Option D details inside the screen (dropdown overlay) -->
+            <div class="screen-dropdown" id="scr-drop">
+              <div class="screen-dropdown-header">
+                <span>[OMP DEV CONSOLE]</span>
+                <span>ESC to close</span>
+              </div>
+              <div class="screen-dropdown-item">Hitch Event: <span>tool.requested</span></div>
+              <div class="screen-dropdown-item">Tool Run: <span>grep_search</span></div>
+              <div class="screen-dropdown-item">Query: <span>"hitch_event_type"</span></div>
+            </div>
+            
+            <!-- BMO Face -->
+            <div class="bmo-face">
+              <div class="bmo-eyes">
+                <div class="bmo-eye">
+                  <div class="bmo-pupil"></div>
+                </div>
+                <div class="bmo-eye">
+                  <div class="bmo-pupil"></div>
+                </div>
+              </div>
+              <div class="bmo-mouth"></div>
+            </div>
+
+            <!-- Standard Status Panel -->
+            <div class="status-panel" id="std-status">STANDBY</div>
+
+            <!-- Option C: Ticker tape at bottom -->
+            <div class="screen-ticker">
+              <div class="ticker-wrap">
+                OMP | tool.requested | tool: grep_search | query: "hitch_event_type" | cwd: ~/workspace/hitch-face
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Cartridge Slot -->
+        <div class="bmo-cartridge-slot"></div>
+
+        <!-- Controls -->
+        <div class="bmo-controls">
+          <div class="bmo-controls-row">
+            <div class="bmo-dpad">
+              <div class="dpad-axis horizontal"></div>
+              <div class="dpad-axis vertical"></div>
+              <div class="dpad-center"></div>
+            </div>
+            
+            <div class="bmo-speaker">
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+            </div>
+
+            <div class="bmo-buttons">
+              <!-- Clicking buttons can trigger side drawer console or screen dropdown -->
+              <div class="btn-yellow" onclick="triggerFaceButton('yellow')"></div>
+              <div class="btn-red" onclick="triggerFaceButton('red')"></div>
+            </div>
+          </div>
+
+          <div class="bmo-controls-row-bottom">
+            <div class="btn-triangle-blue" onclick="triggerFaceButton('blue')"></div>
+            <div class="btn-green-small" onclick="triggerFaceButton('green')"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="spec-details">
+    <h3>Design Spec Decisions</h3>
+    <p>We want to choose the cleanest way to display: <strong>Harness Name</strong> (omp, codex, hermes, pi, etc.) and <strong>Payload Details</strong> (tool name, inputs, prompts) without compromising BMO's delightful facial expressions.</p>
+    <ul>
+      <li><strong>Minimal Ticker HUD (Option 1):</strong> Integrates fully into the virtual screen. Very clean. Keeps BMO compact and self-contained. Shows live context at a glance.</li>
+      <li><strong>Interactive Game Cartridge (Option 2):</strong> Fun physical interaction. Fits BMO's gaming console lore perfectly. The cartridge pops in when an action starts, and pops out (slides back down) when it finishes. Hovering displays the detail tooltip.</li>
+      <li><strong>Side Console Log (Option 3):</strong> Excellent for debugging. Provides readable formatted text. Slides out to the right using CSS transforms. Best for longer payload outputs.</li>
+    </ul>
+    <p><em>Tip: In the Side Console and Cartridge views, clicking BMO's buttons or hovering interactive areas triggers animations! Try clicking the red/yellow face buttons.</em></p>
+  </div>
+
+  <script>
+    let activeStyle = 'default';
+
+    function selectStyle(styleName) {
+      activeStyle = styleName;
+      
+      // Update buttons
+      document.querySelectorAll('.concept-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('btn-' + styleName).classList.add('active');
+
+      // Reset BMO classes
+      const viewport = document.getElementById('bmo-viewport');
+      viewport.className = 'bmo-wrapper';
+      document.getElementById('cart-pop').classList.remove('visible');
+      document.getElementById('scr-drop').style.transform = 'translateY(0)';
+
+      if (styleName === 'cartridge') {
+        viewport.classList.add('cartridge-active');
+      } else if (styleName === 'drawer') {
+        viewport.classList.add('drawer-active');
+      } else if (styleName === 'ticker') {
+        viewport.classList.add('ticker-active');
+      }
+    }
+
+    function toggleCartridgePopup(e) {
+      if (activeStyle !== 'cartridge') return;
+      e.stopPropagation();
+      document.getElementById('cart-pop').classList.toggle('visible');
+    }
+
+    function triggerFaceButton(color) {
+      // If user clicked a button and drawer style is active, toggle it
+      if (activeStyle === 'drawer') {
+        const viewport = document.getElementById('bmo-viewport');
+        viewport.classList.toggle('drawer-active');
+      } else if (activeStyle === 'ticker') {
+        // Toggle screen dropdown overlay for Option C hybrid
+        const drop = document.getElementById('scr-drop');
+        if (drop.style.transform === 'translateY(120px)') {
+          drop.style.transform = 'translateY(0)';
+        } else {
+          drop.style.transform = 'translateY(120px)';
+        }
+      }
+    }
+
+    // Initialize default state
+    selectStyle('ticker');
+  </script>
+</body>
+</html>

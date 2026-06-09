@@ -1,0 +1,12 @@
+{
+  "name": "hitch-face",
+  "version": "1.0.0",
+  "description": "Desktop widget displaying animated robot face expressions matching Hitch events",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^42.3.3"
+  }
+}

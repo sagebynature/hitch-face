@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hitch Face - All Design Options (V5)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      font-weight: 800;
+      background: linear-gradient(to right, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      margin-bottom: 32px;
+      text-align: center;
+      max-width: 600px;
+    }
+
+    /* Interactive Preview Container */
+    .preview-container {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(30, 41, 59, 0.5);
+      padding: 40px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    /* Tabs/Controls for Preview */
+    .controls-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 360px;
+    }
+
+    .concept-btn {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      color: #94a3b8;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-btn:hover {
+      background: #334155;
+      color: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .concept-btn.active {
+      background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    }
+
+    .concept-btn.active.hybrid {
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+      box-shadow: 0 4px 14px rgba(236, 72, 153, 0.4);
+    }
+
+    .concept-btn h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .concept-btn p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      opacity: 0.85;
+    }
+
+    /* BMO Viewport */
+    .bmo-wrapper {
+      position: relative;
+      width: 500px;
+      height: 460px;
+      background: #111827;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: inset 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    /* BMO Variables */
+    :root {
+      --bg-color: #b8e2c8;
+      --face-color: #1e352f;
+      --bmo-casing: #4ca8a1;
+      --bmo-casing-dark: #3a8e87;
+      --bmo-casing-light: #5dbdb5;
+    }
+
+    /* BMO Body */
+    .bmo-body {
+      position: relative;
+      width: 270px;
+      height: 330px;
+      background: linear-gradient(135deg, var(--bmo-casing) 0%, var(--bmo-casing-dark) 100%);
+      border-radius: 28px;
+      border: 3px solid #285e57;
+      box-shadow: 
+        inset 0 4px 0 var(--bmo-casing-light),
+        0 10px 30px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 15px;
+      box-sizing: border-box;
+      z-index: 10;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    }
+
+    .bmo-brand-left, .bmo-brand-right {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-weight: 800;
+      font-size: 24px;
+      color: rgba(19, 45, 41, 0.2);
+      letter-spacing: -2px;
+      pointer-events: none;
+      writing-mode: vertical-lr;
+      text-orientation: upright;
+    }
+    .bmo-brand-left { left: 8px; }
+    .bmo-brand-right { right: 8px; }
+
+    .bmo-screen-bezel {
+      width: 230px;
+      height: 160px;
+      background: #2b675e;
+      border-radius: 18px;
+      padding: 6px;
+      box-sizing: border-box;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.4);
+      z-index: 12;
+    }
+
+    .bmo-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-color);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 10px 8px 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      opacity: 0.7;
+      animation: scan 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scan {
+      0% { top: 0; }
+      100% { top: 100%; }
+    }
+
+    .bmo-face {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: 6px;
+      gap: 10px;
+      transition: transform 0.3s ease;
+    }
+
+    .bmo-eyes {
+      display: flex;
+      justify-content: space-around;
+      width: 120px;
+    }
+
+    .bmo-eye {
+      position: relative;
+      width: 22px;
+      height: 22px;
+    }
+
+    .bmo-pupil {
+      width: 12px;
+      height: 18px;
+      background: var(--face-color);
+      border-radius: 50%;
+      margin: 2px auto;
+    }
+
+    .bmo-mouth {
+      width: 16px;
+      height: 5px;
+      border-bottom: 3px solid var(--face-color);
+      border-radius: 50%;
+    }
+
+    .status-panel {
+      padding: 2px 8px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--face-color);
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+
+    .bmo-cartridge-slot {
+      position: relative;
+      width: 130px;
+      height: 7px;
+      background: #1f4f47;
+      border-radius: 3px;
+      margin: 8px auto;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* Cartridge Pak (Opacity 0 by default to prevent overlapping/misalignment bugs) */
+    .bmo-cartridge {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      width: 100px;
+      height: 40px;
+      background: #708090;
+      border: 2px solid #2f4f4f;
+      border-bottom: none;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 -4px 10px rgba(0,0,0,0.3);
+      z-index: 9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 4px;
+      box-sizing: border-box;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+      cursor: pointer;
+    }
+
+    .bmo-cartridge-label {
+      width: 80px;
+      height: 16px;
+      background: #e11d48;
+      border: 1px solid #9f1239;
+      border-radius: 2px;
+      color: white;
+      font-size: 7px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Cartridge ONLY visible in cartridge option or when simulated */
+    .state-cartridge .bmo-cartridge,
+    .state-hybrid.cartridge-popped-in .bmo-cartridge {
+      transform: translateX(-50%) translateY(12px);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cartridge-popup {
+      position: absolute;
+      top: 20px;
+      width: 180px;
+      background: #1e293b;
+      border: 2px solid #fb7185;
+      border-radius: 8px;
+      padding: 10px;
+      color: #fda4af;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .state-cartridge .bmo-cartridge:hover + .cartridge-popup,
+    .state-cartridge .cartridge-popup.visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    /* Option B: Side Console Drawer (Pushes BMO to the left) */
+    .console-drawer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 220px;
+      height: 270px;
+      background: #1e293b;
+      border: 3px solid #334155;
+      border-left: none;
+      border-top-right-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
+      z-index: 3;
+      box-sizing: border-box;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    }
+
+    /* Original Option B: Push BMO Left, Slide Drawer Right */
+    .state-drawer-original .console-drawer {
+      transform: translate(30px, -50%);
+    }
+    .state-drawer-original .bmo-body {
+      transform: translateX(-90px);
+    }
+
+    /* Option D / Hybrid Drawer (Slides out relative to BMO body, BMO stays centered) */
+    .state-hybrid .console-drawer {
+      left: calc(50% + 130px);
+      transform: translateY(-50%) scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.4s ease;
+    }
+    .state-hybrid.drawer-open .console-drawer {
+      transform: translateY(-50%) scaleX(1);
+    }
+
+    .console-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #38bdf8;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .console-content {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: #cbd5e1;
+      flex-grow: 1;
+      line-height: 1.5;
+    }
+
+    .console-content span {
+      color: #60a5fa;
+    }
+
+    .console-footer {
+      font-size: 8px;
+      color: #64748b;
+      text-align: right;
+    }
+
+    /* Screen HUD Details */
+    .hud-header {
+      position: absolute;
+      top: 4px;
+      left: 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: rgba(30, 53, 47, 0.6);
+      font-weight: bold;
+      opacity: 0;
+    }
+
+    .screen-ticker {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(30, 53, 47, 0.08);
+      border-top: 1px dashed rgba(30, 53, 47, 0.2);
+      height: 18px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      opacity: 0;
+      padding: 0 4px;
+    }
+
+    .ticker-wrap {
+      white-space: nowrap;
+      display: inline-block;
+      animation: ticker 15s linear infinite;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--face-color);
+      font-weight: bold;
+    }
+
+    @keyframes ticker {
+      0% { transform: translate3d(100%, 0, 0); }
+      100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    /* Show HUD & Ticker in relevant states */
+    .state-ticker .hud-header,
+    .state-hybrid .hud-header {
+      opacity: 1;
+    }
+
+    .state-ticker .screen-ticker,
+    .state-hybrid .screen-ticker {
+      opacity: 1;
+    }
+
+    .state-ticker .bmo-face,
+    .state-hybrid .bmo-face {
+      transform: translateY(-5px);
+    }
+
+    .state-ticker .status-panel,
+    .state-hybrid .status-panel {
+      display: none;
+    }
+
+    /* Controls Buttons */
+    .bmo-controls {
+      width: 100%;
+      padding: 0 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bmo-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 45px;
+    }
+
+    .bmo-dpad {
+      position: relative;
+      width: 44px;
+      height: 44px;
+    }
+    .dpad-axis {
+      position: absolute;
+      background: #243432;
+      border-radius: 2px;
+      box-shadow: 0 1.5px 0 rgba(0,0,0,0.3);
+    }
+    .dpad-axis.horizontal {
+      width: 44px;
+      height: 12px;
+      top: 16px;
+      left: 0;
+    }
+    .dpad-axis.vertical {
+      width: 12px;
+      height: 44px;
+      top: 0;
+      left: 16px;
+    }
+    .dpad-center {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      top: 16px;
+      left: 16px;
+      background: #1b2625;
+      z-index: 3;
+    }
+
+    .bmo-speaker {
+      display: flex;
+      gap: 3px;
+    }
+    .speaker-line {
+      width: 2.5px;
+      height: 16px;
+      background: #255850;
+      border-radius: 1px;
+    }
+
+    .bmo-buttons {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    
+    .btn-yellow {
+      width: 18px;
+      height: 18px;
+      background: #f8c630;
+      border-radius: 50%;
+      border: 1px solid #b8921e;
+      box-shadow: 0 2px 0 #b8921e;
+      cursor: pointer;
+    }
+    
+    .btn-red {
+      width: 22px;
+      height: 22px;
+      background: #d94343;
+      border-radius: 50%;
+      border: 1px solid #9c2e2e;
+      box-shadow: 0 2px 0 #9c2e2e;
+      cursor: pointer;
+    }
+
+    .bmo-controls-row-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      height: 20px;
+    }
+    .btn-triangle-blue {
+      width: 16px;
+      height: 16px;
+      background: #2a6f97;
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      transform: rotate(90deg);
+      border-radius: 2px;
+      box-shadow: 0 1.5px 0 #1b4965;
+    }
+    .btn-green-small {
+      width: 10px;
+      height: 10px;
+      background: #4cb944;
+      border-radius: 50%;
+      border: 1px solid #378631;
+      box-shadow: 0 1px 0 #378631;
+    }
+
+    /* Red Button Indicator specifically for Hybrid */
+    .btn-red-hint {
+      position: relative;
+    }
+    .state-hybrid .btn-red::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border-radius: 50%;
+      border: 1.5px dashed #fb7185;
+      animation: rotate 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rotate {
+      100% { transform: rotate(360deg); }
+    }
+
+    .hint-bar {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #38bdf8;
+      font-weight: 600;
+      text-align: center;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Hitch Face - All Design Options (Fixed Cartridge Hide)</h2>
+  <p class="subtitle">Switch between the options below to compare. The cartridge pak is now cleanly hidden when other options are active.</p>
+
+  <div class="hint-bar" id="state-hint">Select a concept below to interact!</div>
+
+  <div class="preview-container">
+    
+    <!-- Left Hand Selection Panel -->
+    <div class="controls-panel">
+      
+      <div class="concept-btn" id="btn-cartridge" onclick="selectStyle('cartridge')">
+        <h3>Option A: Cartridge Pop-in</h3>
+        <p>A Game Boy cartridge slides into the slot during events. Hovering over it reveals the payload tooltip.</p>
+      </div>
+
+      <div class="concept-btn" id="btn-drawer-original" onclick="selectStyle('drawer-original')">
+        <h3>Option B: Side Console (Original)</h3>
+        <p>Clicking BMO's face buttons slides open a console drawer. <em>Note: This shifts BMO's body to the left.</em></p>
+      </div>
+
+      <div class="concept-btn" id="btn-ticker" onclick="selectStyle('ticker')">
+        <h3>Option C: Screen HUD & Ticker</h3>
+        <p>Keeps the exterior casing completely minimal. Renders status at top-left and parameters in a scrolling text ticker at the bottom.</p>
+      </div>
+
+      <div class="concept-btn hybrid active" id="btn-hybrid" onclick="selectStyle('hybrid')">
+        <h3>Option D: The Hybrid (Recommended)</h3>
+        <p>Default Screen HUD/Ticker on the CRT screen, plus clicking BMO's physical <strong>Red Button</strong> toggles the Side Drawer Console (slides out to the right; BMO stays centered).</p>
+      </div>
+
+    </div>
+
+    <!-- Right Hand BMO Viewport -->
+    <div class="bmo-wrapper" id="bmo-vp">
+      <div class="bmo-container" id="bmo-main-container" style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+        
+        <!-- Cartridge Tooltip (Option A) -->
+        <div class="cartridge-popup" id="cart-pop">
+          <strong>CARTRIDGE DETAILS:</strong><br>
+          • harness: omp<br>
+          • event: tool.requested<br>
+          • tool: grep_search<br>
+          • query: "hitch_event_type"
+        </div>
+
+        <!-- Side Console Drawer (Option B & Hybrid) -->
+        <div class="console-drawer" id="cons-draw">
+          <div>
+            <div class="console-header">>_ Hitch Log Console</div>
+            <div class="console-content">
+              harness: <span>omp</span><br>
+              event: <span>tool.requested</span><br>
+              tool: <span>grep_search</span><br>
+              cwd: <span>~/workspace/hitch-face</span><br>
+              ---------------------------<br>
+              query: <span>"hitch_event_type"</span><br>
+              path: <span>/Users/sage/...</span>
+            </div>
+          </div>
+          <div class="console-footer">Status: Executing...</div>
+        </div>
+
+        <!-- BMO Body -->
+        <div class="bmo-body" id="bmo-body-el">
+          <div class="bmo-brand-left">B</div>
+          <div class="bmo-brand-right">MO</div>
+
+          <!-- Game Cartridge (Child of BMO body, cleanly hidden unless active) -->
+          <div class="bmo-cartridge" id="cart-pak" onclick="toggleCartridgePopup(event)">
+            <div class="bmo-cartridge-label">OMP HARNESS</div>
+          </div>
+
+          <!-- Bezel -->
+          <div class="bmo-screen-bezel">
+            <div class="bmo-screen">
+              <div class="scanline"></div>
+              
+              <!-- Option C & Hybrid: Screen HUD -->
+              <div class="hud-header">[OMP / GREP_SEARCH]</div>
+              
+              <!-- BMO Face -->
+              <div class="bmo-face">
+                <div class="bmo-eyes">
+                  <div class="bmo-eye">
+                    <div class="bmo-pupil"></div>
+                  </div>
+                  <div class="bmo-eye">
+                    <div class="bmo-pupil"></div>
+                  </div>
+                </div>
+                <div class="bmo-mouth"></div>
+              </div>
+
+              <!-- Standard Status Panel -->
+              <div class="status-panel" id="std-status">STANDBY</div>
+
+              <!-- Option C & Hybrid: Scrolling Ticker -->
+              <div class="screen-ticker">
+                <div class="ticker-wrap">
+                  OMP | tool.requested | tool: grep_search | query: "hitch_event_type" | cwd: ~/workspace/hitch-face
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Cartridge Slot -->
+          <div class="bmo-cartridge-slot"></div>
+
+          <!-- Controls -->
+          <div class="bmo-controls">
+            <div class="bmo-controls-row">
+              <div class="bmo-dpad">
+                <div class="dpad-axis horizontal"></div>
+                <div class="dpad-axis vertical"></div>
+                <div class="dpad-center"></div>
+              </div>
+              
+              <div class="bmo-speaker">
+                <div class="speaker-line"></div>
+                <div class="speaker-line"></div>
+                <div class="speaker-line"></div>
+                <div class="speaker-line"></div>
+              </div>
+
+              <div class="bmo-buttons">
+                <div class="btn-yellow" onclick="handleButtonClick('yellow')"></div>
+                <div class="btn-red" onclick="handleButtonClick('red')"></div>
+              </div>
+            </div>
+
+            <div class="bmo-controls-row-bottom">
+              <div class="btn-triangle-blue"></div>
+              <div class="btn-green-small"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let activeStyle = 'hybrid';
+
+    function selectStyle(styleName) {
+      activeStyle = styleName;
+      
+      // Update buttons
+      document.querySelectorAll('.concept-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('btn-' + styleName).classList.add('active');
+
+      // Reset BMO classes
+      const container = document.getElementById('bmo-main-container');
+      container.className = 'bmo-container';
+      document.getElementById('cart-pop').classList.remove('visible');
+      
+      const hint = document.getElementById('state-hint');
+
+      if (styleName === 'cartridge') {
+        container.classList.add('state-cartridge');
+        hint.innerHTML = "💾 Hover over the cartridge sticking out of BMO's head to see the popup detail!";
+      } else if (styleName === 'drawer-original') {
+        container.classList.add('state-drawer-original');
+        hint.innerHTML = "🔄 Click either Yellow or Red face button to toggle logs. Notice how BMO shifts left.";
+      } else if (styleName === 'ticker') {
+        container.classList.add('state-ticker');
+        hint.innerHTML = "📺 Standard Screen HUD and Ticker (no physical case animations or console logs).";
+      } else if (styleName === 'hybrid') {
+        container.classList.add('state-hybrid');
+        hint.innerHTML = "🔴 Screen HUD and Ticker are active. Click the Red Button to slide open/close logs (BMO stays centered!).";
+      }
+    }
+
+    function toggleCartridgePopup(e) {
+      if (activeStyle !== 'cartridge') return;
+      e.stopPropagation();
+      document.getElementById('cart-pop').classList.toggle('visible');
+    }
+
+    function handleButtonClick(color) {
+      if (activeStyle === 'drawer-original') {
+        const container = document.getElementById('bmo-main-container');
+        if (container.classList.contains('state-drawer-original')) {
+          container.classList.remove('state-drawer-original');
+          setTimeout(() => container.classList.add('state-drawer-original'), 2500);
+        }
+      } else if (activeStyle === 'hybrid') {
+        if (color === 'red') {
+          const container = document.getElementById('bmo-main-container');
+          container.classList.toggle('drawer-open');
+        }
+      }
+    }
+
+    // Initialize with hybrid style
+    selectStyle('hybrid');
+  </script>
+</body>
+</html>

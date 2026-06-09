@@ -1,0 +1,10 @@
+# Hitch Face Configuration
+
+# Movement speed multiplier for the bouncing face (default: 1.0)
+speed = 1.0
+
+# Bouncing physics refresh interval in milliseconds (default: 100)
+interval_ms = 100
+
+# Port for the HTTP server listening for event updates (default: 8888)
+port = 8888

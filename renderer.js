@@ -1,0 +1,155 @@
+const { ipcRenderer } = require('electron');
+
+const container = document.getElementById('app-container');
+const statusLabel = document.querySelector('.status-label');
+
+let resetTimeout = null;
+
+// Map Hitch event types to styling categories (states) and specific classes
+const eventMap = {
+  // Session Events
+  'session.started': { state: 'state-session', className: 'expression-session-started', sticky: true },
+  'session.resumed': { state: 'state-session', className: 'expression-session-resumed', sticky: true },
+  'session.ended': { state: 'state-session', className: 'expression-session-ended', sticky: true },
+  'session.compacted': { state: 'state-session', className: 'expression-session-compacted', duration: 3000 },
+
+  // Turn Events
+  'turn.started': { state: 'state-turn', className: 'expression-turn-started', sticky: true },
+  'turn.user_prompt': { state: 'state-turn', className: 'expression-turn-user-prompt', sticky: true },
+  'turn.assistant_started': { state: 'state-turn', className: 'expression-turn-assistant-started', sticky: true },
+  'turn.assistant_completed': { state: 'state-turn', className: 'expression-turn-assistant-completed', duration: 4000 },
+  'turn.completed': { state: 'state-turn', className: 'expression-turn-completed', duration: 2500 },
+
+  // LLM Events
+  'llm.requested': { state: 'state-llm', className: 'expression-llm-requested', sticky: true },
+  'llm.completed': { state: 'state-llm', className: 'expression-llm-completed', duration: 2000 },
+
+  // Tool Events
+  'tool.requested': { state: 'state-tool', className: 'expression-tool-requested', sticky: true },
+  'tool.permission_requested': { state: 'state-tool', className: 'expression-tool-permission-requested', sticky: true },
+  'tool.completed': { state: 'state-tool', className: 'expression-tool-completed', duration: 2500 },
+  'tool.progress': { state: 'state-tool', className: 'expression-tool-progress', sticky: true },
+
+  // Retry Events
+  'retry.started': { state: 'state-tool', className: 'expression-retry-started', sticky: true },
+  'retry.completed': { state: 'state-tool', className: 'expression-retry-completed', duration: 2500 },
+
+  // Subagent Events
+  'subagent.started': { state: 'state-subagent', className: 'expression-subagent-started', sticky: true },
+  'subagent.completed': { state: 'state-subagent', className: 'expression-subagent-completed', duration: 2500 },
+
+  // Diagnostics
+  'error.reported': { state: 'state-error', className: 'expression-error-reported', duration: 5000 }
+};
+
+// Web Audio API Sound Generator
+let audioCtx = null;
+
+function playRobotSound(expr) {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+
+    if (expr === 'error.reported') {
+      // Descending warning beep
+      playBeep(now, 180, 100, 0.15, 'sawtooth');
+      playBeep(now + 0.18, 140, 80, 0.2, 'sawtooth');
+    } else if (expr === 'tool.permission_requested') {
+      // Alert chime: high-low-high alert
+      playBeep(now, 523.25, 523.25, 0.1, 'sine');
+      playBeep(now + 0.12, 392.00, 392.00, 0.1, 'sine');
+      playBeep(now + 0.24, 659.25, 659.25, 0.15, 'sine');
+    } else if (expr.startsWith('session.')) {
+      // Upward sweep
+      playSweep(now, 200, 800, 0.25, 'triangle');
+    } else if (expr.startsWith('tool.')) {
+      // Click diagnostic chime
+      playBeep(now, 600, 600, 0.04, 'square');
+      playBeep(now + 0.08, 900, 900, 0.04, 'square');
+    } else if (expr.startsWith('llm.')) {
+      // Chirp
+      playSweep(now, 1000, 600, 0.12, 'sine');
+    } else if (expr === 'turn.user_prompt') {
+      // Pop blip
+      playSweep(now, 400, 600, 0.1, 'sine');
+    } else if (expr === 'turn.assistant_completed') {
+      // Success melody
+      playBeep(now, 523.25, 523.25, 0.08, 'sine');
+      playBeep(now + 0.08, 659.25, 659.25, 0.08, 'sine');
+      playBeep(now + 0.16, 783.99, 783.99, 0.15, 'sine');
+    } else {
+      // Standard chirp
+      playBeep(now, 600, 800, 0.08, 'sine');
+    }
+  } catch (err) {
+    console.error('Failed to play audio:', err);
+  }
+}
+
+function playBeep(time, startFreq, endFreq, duration, type = 'sine') {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(startFreq, time);
+  if (startFreq !== endFreq) {
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + duration);
+  }
+
+  // Keep volume moderate (0.05)
+  gain.gain.setValueAtTime(0.05, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(time);
+  osc.stop(time + duration);
+}
+
+function playSweep(time, startFreq, endFreq, duration, type = 'sine') {
+  playBeep(time, startFreq, endFreq, duration, type);
+}
+
+// Reset to default idle standby state
+function resetToIdle() {
+  container.className = 'state-idle';
+  statusLabel.textContent = 'STANDBY';
+}
+
+ipcRenderer.on('set-expression', (event, expr) => {
+  // Clear any pending transition timeouts
+  if (resetTimeout) {
+    clearTimeout(resetTimeout);
+    resetTimeout = null;
+  }
+
+  const config = eventMap[expr];
+  if (!config) {
+    // If unknown expression received, show it as generic raw state
+    container.className = 'state-idle';
+    statusLabel.textContent = expr.toUpperCase().substring(0, 16);
+    return;
+  }
+
+  // Play robot sound
+  playRobotSound(expr);
+
+  // Update classes
+  container.className = `${config.state} ${config.className}`;
+  statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
+
+  // If the expression has a limited duration, set a timer to return to idle
+  if (!config.sticky && config.duration) {
+    resetTimeout = setTimeout(() => {
+      resetToIdle();
+    }, config.duration);
+  }
+});
+
