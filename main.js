@@ -127,8 +127,8 @@ function startBouncing() {
     // (BMO body: 310x370, arms: 48px, legs: 40px, centered inside 450x450 container)
     const padTop = 65;     // top of BMO casing
     const padBottom = 460; // bottom of BMO's feet
-    const padLeft = 50;    // left arm tip
-    const padRight = 450;  // right arm tip
+    const padLeft = 175;    // left arm tip
+    const padRight = 575;  // right arm tip
 
     // Bounce off screen edges using visual bounds
     if (x + padLeft <= minX) {
@@ -180,8 +180,22 @@ const server = http.createServer((req, res) => {
       body += chunk.toString();
     });
     req.on('end', () => {
+      let payload;
       try {
-        const payload = JSON.parse(body);
+        payload = JSON.parse(body);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', reason: 'Invalid JSON' }));
+        return;
+      }
+
+      try {
+        if (!payload || typeof payload !== 'object') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'error', reason: 'Payload must be an object' }));
+          return;
+        }
+
         let expr = payload.hitch_event_type;
         let envelope = payload;
         
@@ -195,7 +209,7 @@ const server = http.createServer((req, res) => {
           };
         }
         
-        if (expr && mainWindow) {
+        if (expr && mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
           mainWindow.webContents.send('hitch-event', envelope);
           console.log(`Event processed: ${expr}`);
 
@@ -209,8 +223,9 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok', event: expr }));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'error', reason: 'Invalid JSON' }));
+        console.error('Error handling request:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', reason: 'Internal Server Error' }));
       }
     });
   } else {
