@@ -12,7 +12,7 @@
 body {
   margin: 0;
   padding: 0;
-  width: 500px;
+  width: 750px;
   height: 500px;
   background: transparent;
   font-family: var(--font-family);
@@ -26,12 +26,21 @@ body {
 /* App container */
 #app-container {
   position: relative;
-  width: 450px;
+  width: 750px;
   height: 450px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.5s ease;
+}
+
+.bmo-relative-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 /* BMO Body Casing */
@@ -873,4 +882,145 @@ body {
 @keyframes glitch-mouth {
   0% { transform: translateX(-2px); }
   100% { transform: translateX(2px); }
+}
+
+/* ==========================================================================
+   Hitch Metadata Display (Screen HUD, Ticker, and Drawer)
+   ========================================================================== */
+
+/* Side Console Drawer */
+.console-drawer {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 150px); /* Positioned right at BMO's right edge (150px is half of 300px BMO bounds) */
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left center;
+  width: 200px;
+  height: 270px;
+  background: #1e293b;
+  border: 3px solid #334155;
+  border-left: none;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
+  z-index: 5;
+  box-sizing: border-box;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Open Drawer State class applied to app-container */
+#app-container.drawer-open .console-drawer {
+  transform: translateY(-50%) scaleX(1);
+}
+
+.console-header {
+  font-size: 10px;
+  font-weight: 800;
+  color: #e11d48;
+  border-bottom: 1px solid rgba(225, 29, 72, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.console-content {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #cbd5e1;
+  flex-grow: 1;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+.console-content span {
+  color: #fb7185;
+}
+
+.console-footer {
+  font-size: 8px;
+  color: #64748b;
+  text-align: right;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+/* Screen HUD & Ticker Elements */
+.hud-header {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-family: var(--font-family);
+  font-size: 8px;
+  color: var(--face-color);
+  font-weight: 600;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+.screen-ticker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.04);
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  height: 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 4px;
+  opacity: 0.9;
+}
+
+.ticker-wrap {
+  white-space: nowrap;
+  display: inline-block;
+  animation: ticker 15s linear infinite;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  color: var(--face-color);
+  font-weight: bold;
+}
+
+@keyframes ticker {
+  0% { transform: translate3d(100%, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Slide BMO Face upward when screen ticker is active */
+#app-container:not(.state-idle) .bmo-face {
+  transform: translateY(-4px);
+}
+
+/* Hide standard status panel when screen ticker is active */
+#app-container:not(.state-idle) .status-panel {
+  display: none;
+}
+
+/* Red Button interactivity pulse hint when active */
+#app-container:not(.state-idle) .btn-red {
+  position: relative;
+}
+#app-container:not(.state-idle) .btn-red::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 1px dashed #e11d48;
+  animation: button-pulse 10s linear infinite;
+  pointer-events: none;
+}
+@keyframes button-pulse {
+  100% { transform: rotate(360deg); }
 }

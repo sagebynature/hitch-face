@@ -10,8 +10,20 @@
 </head>
 <body>
   <div id="app-container" class="state-idle">
-    <!-- BMO Main Body (Draggable) -->
-    <div class="bmo-body">
+    <div class="bmo-relative-container">
+      <!-- Side Console Drawer (Slides out from behind BMO) -->
+      <div class="console-drawer">
+        <div>
+          <div class="console-header">>_ Hitch Log Console</div>
+          <div class="console-content">
+            <!-- Log text updated dynamically -->
+          </div>
+        </div>
+        <div class="console-footer">Status: Idle</div>
+      </div>
+
+      <!-- BMO Main Body (Draggable) -->
+      <div class="bmo-body">
       <!-- Side Text printed on BMO's body -->
       <div class="bmo-brand-left">B</div>
       <div class="bmo-brand-right">MO</div>
@@ -20,6 +32,9 @@
       <div class="bmo-screen-bezel">
         <div class="bmo-screen">
           <div class="scanline"></div>
+          
+          <!-- Screen HUD Details -->
+          <div class="hud-header"></div>
           
           <!-- Face -->
           <div class="bmo-face">
@@ -40,6 +55,11 @@
           <!-- Status Indicator (retro LCD style) -->
           <div class="status-panel">
             <span class="status-label">STANDBY</span>
+          </div>
+
+          <!-- Scrolling Ticker at bottom of Screen -->
+          <div class="screen-ticker">
+            <div class="ticker-wrap"></div>
           </div>
         </div>
       </div>
@@ -90,8 +110,8 @@
       <div class="bmo-leg right">
         <div class="foot"></div>
       </div>
-    </div>
-  </div>
+    </div> <!-- Close bmo-relative-container -->
+  </div> <!-- Close app-container -->
 
   <script src="renderer.js"></script>
 </body>
