@@ -77,7 +77,7 @@ function loadConfig() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 500,
+    width: 750,
     height: 500,
     frame: false,
     transparent: true,
@@ -174,7 +174,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'POST' && req.url === '/expression') {
+  if (req.method === 'POST' && (req.url === '/event' || req.url === '/expression')) {
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();
@@ -182,10 +182,22 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const payload = JSON.parse(body);
-        const expr = payload.expression;
+        let expr = payload.hitch_event_type;
+        let envelope = payload;
+        
+        // Backwards compatibility for legacy /expression or plain string updates
+        if (req.url === '/expression') {
+          expr = payload.expression;
+          envelope = {
+            hitch_event_type: expr,
+            harness: 'omp',
+            payload: {}
+          };
+        }
+        
         if (expr && mainWindow) {
-          mainWindow.webContents.send('set-expression', expr);
-          console.log(`Expression updated to: ${expr}`);
+          mainWindow.webContents.send('hitch-event', envelope);
+          console.log(`Event processed: ${expr}`);
 
           // Control window bouncing movement based on event type
           if (actionStartEvents.includes(expr)) {
@@ -195,7 +207,7 @@ const server = http.createServer((req, res) => {
           }
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', expression: expr }));
+        res.end(JSON.stringify({ status: 'ok', event: expr }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'error', reason: 'Invalid JSON' }));
