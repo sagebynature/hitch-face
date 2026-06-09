@@ -3,6 +3,11 @@ const ipcRenderer = (electron && typeof electron === 'object') ? electron.ipcRen
 
 const container = typeof document !== 'undefined' ? document.getElementById('app-container') : null;
 const statusLabel = typeof document !== 'undefined' ? document.querySelector('.status-label') : null;
+const hudHeader = typeof document !== 'undefined' ? document.querySelector('.hud-header') : null;
+const tickerWrap = typeof document !== 'undefined' ? document.querySelector('.ticker-wrap') : null;
+const consoleContent = typeof document !== 'undefined' ? document.querySelector('.console-content') : null;
+const consoleFooter = typeof document !== 'undefined' ? document.querySelector('.console-footer') : null;
+const btnRed = typeof document !== 'undefined' ? document.querySelector('.btn-red') : null;
 
 let resetTimeout = null;
 
@@ -123,38 +128,108 @@ function playSweep(time, startFreq, endFreq, duration, type = 'sine') {
 
 // Reset to default idle standby state
 function resetToIdle() {
-  if (container) container.className = 'state-idle';
+  if (container) {
+    const isDrawerOpen = container.classList.contains('drawer-open');
+    container.className = 'state-idle';
+    if (isDrawerOpen) {
+      container.classList.add('drawer-open');
+    }
+  }
   if (statusLabel) statusLabel.textContent = 'STANDBY';
 }
 
-if (ipcRenderer) {
-  ipcRenderer.on('set-expression', (event, expr) => {
-    // Clear any pending transition timeouts
-    if (resetTimeout) {
-      clearTimeout(resetTimeout);
-      resetTimeout = null;
+function handleHitchEvent(envelope) {
+  // Clear any pending transition timeouts
+  if (resetTimeout) {
+    clearTimeout(resetTimeout);
+    resetTimeout = null;
+  }
+
+  const expr = envelope.hitch_event_type;
+  const config = eventMap[expr];
+  
+  // Play robot sound
+  playRobotSound(expr);
+  
+  // Extract and update metadata UI elements
+  const metadata = extractMetadata(envelope);
+  if (hudHeader) {
+    hudHeader.textContent = `[${metadata.harness} / ${metadata.event}]`;
+  }
+  if (tickerWrap) {
+    tickerWrap.textContent = metadata.tickerText;
+  }
+  if (consoleContent) {
+    const formattedLines = metadata.consoleText.split('\n').map(line => {
+      const colonIndex = line.indexOf(':');
+      if (colonIndex !== -1) {
+        const key = line.substring(0, colonIndex);
+        const val = line.substring(colonIndex + 1);
+        return `<span>${key}:</span>${val}`;
+      }
+      return line;
+    });
+    consoleContent.innerHTML = formattedLines.join('<br>');
+  }
+  if (consoleFooter) {
+    consoleFooter.textContent = `Status: ${metadata.event}`;
+  }
+
+  // Update expression classes and status label
+  if (config) {
+    const isDrawerOpen = container ? container.classList.contains('drawer-open') : false;
+    if (container) {
+      container.className = `${config.state} ${config.className}`;
+      if (isDrawerOpen) {
+        container.classList.add('drawer-open');
+      }
     }
-
-    const config = eventMap[expr];
-    if (!config) {
-      // If unknown expression received, show it as generic raw state
-      if (container) container.className = 'state-idle';
-      if (statusLabel) statusLabel.textContent = expr.toUpperCase().substring(0, 16);
-      return;
+    if (statusLabel) {
+      statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
     }
-
-    // Play robot sound
-    playRobotSound(expr);
-
-    // Update classes
-    if (container) container.className = `${config.state} ${config.className}`;
-    if (statusLabel) statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
 
     // If the expression has a limited duration, set a timer to return to idle
     if (!config.sticky && config.duration) {
       resetTimeout = setTimeout(() => {
         resetToIdle();
       }, config.duration);
+    }
+  } else {
+    // If unknown expression received, show it as generic raw state
+    const isDrawerOpen = container ? container.classList.contains('drawer-open') : false;
+    if (container) {
+      container.className = 'state-idle';
+      if (isDrawerOpen) {
+        container.classList.add('drawer-open');
+      }
+    }
+    if (statusLabel) {
+      statusLabel.textContent = expr.toUpperCase().substring(0, 16);
+    }
+  }
+}
+
+if (ipcRenderer) {
+  ipcRenderer.on('set-expression', (event, expr) => {
+    // Synthesize compatibility envelope
+    const envelope = {
+      hitch_event_type: expr,
+      harness: 'omp',
+      payload: {}
+    };
+    handleHitchEvent(envelope);
+  });
+
+  ipcRenderer.on('hitch-event', (event, envelope) => {
+    handleHitchEvent(envelope);
+  });
+}
+
+// Bind red button click to toggle console drawer
+if (btnRed) {
+  btnRed.addEventListener('click', () => {
+    if (container) {
+      container.classList.toggle('drawer-open');
     }
   });
 }
