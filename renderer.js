@@ -47,6 +47,9 @@ const eventMap = {
 let audioCtx = null;
 
 function playRobotSound(expr) {
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -157,7 +160,75 @@ if (ipcRenderer) {
 }
 
 function extractMetadata(envelope) {
-  return {};
+  if (!envelope) {
+    return { harness: 'UNKNOWN', event: 'UNKNOWN', tickerText: 'No event envelope', consoleText: '' };
+  }
+  
+  const rawHarness = envelope.harness || 'unknown';
+  const harness = rawHarness.toUpperCase();
+  const event = (envelope.hitch_event_type || 'unknown').toUpperCase();
+  
+  let tickerText = `${harness} | ${envelope.hitch_event_type || ''}`;
+  let consoleLines = [
+    `harness: ${rawHarness}`,
+    `event: ${envelope.hitch_event_type || ''}`
+  ];
+  
+  const payload = envelope.payload || {};
+  
+  if (envelope.hitch_event_type === 'tool.requested' || envelope.hitch_event_type === 'tool.completed') {
+    const tool = payload.tool || {};
+    if (tool.name) {
+      tickerText += ` | tool: ${tool.name}`;
+      consoleLines.push(`tool: ${tool.name}`);
+    }
+    if (tool.input) {
+      if (typeof tool.input === 'object' && tool.input !== null) {
+        for (const [k, v] of Object.entries(tool.input)) {
+          const valStr = typeof v === 'object' ? JSON.stringify(v) : v;
+          tickerText += ` | ${k}: "${valStr}"`;
+          consoleLines.push(`${k}: "${valStr}"`);
+        }
+      } else {
+        tickerText += ` | input: ${tool.input}`;
+      }
+    }
+  } else if (envelope.hitch_event_type === 'llm.completed') {
+    const llm = payload.llm || {};
+    if (llm.finish_reason) {
+      tickerText += ` | finish: ${llm.finish_reason}`;
+      consoleLines.push(`finish: ${llm.finish_reason}`);
+    }
+    if (llm.usage) {
+      if (llm.usage.tokens !== undefined) {
+        tickerText += ` | tokens: ${llm.usage.tokens}`;
+        consoleLines.push(`tokens: ${llm.usage.tokens}`);
+      }
+      if (llm.usage.cost !== undefined) {
+        tickerText += ` | cost: $${llm.usage.cost}`;
+        consoleLines.push(`cost: $${llm.usage.cost}`);
+      }
+    }
+  } else if (envelope.hitch_event_type === 'turn.user_prompt') {
+    const turn = payload.turn || {};
+    if (turn.prompt) {
+      const cleanedPrompt = turn.prompt.replace(/\r?\n/g, ' ');
+      tickerText += ` | prompt: "${cleanedPrompt}"`;
+      consoleLines.push(`prompt: "${cleanedPrompt}"`);
+    }
+  }
+  
+  // Shorten ticker text if it is excessively long
+  if (tickerText.length > 200) {
+    tickerText = tickerText.substring(0, 197) + '...';
+  }
+  
+  return {
+    harness,
+    event,
+    tickerText,
+    consoleText: consoleLines.join('\n')
+  };
 }
 
 if (typeof module !== 'undefined') {

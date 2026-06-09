@@ -4,7 +4,8 @@
   "description": "Desktop widget displaying animated robot face expressions matching Hitch events",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "node tests/extract-metadata.test.js"
   },
   "dependencies": {
     "electron": "^42.3.3"
