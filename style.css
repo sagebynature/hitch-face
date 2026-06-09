@@ -141,6 +141,7 @@ body {
   width: 100%;
   margin-top: 10px;
   gap: 18px;
+  transition: transform 0.3s ease;
 }
 
 /* Eyes Layout */
@@ -339,10 +340,11 @@ body {
 /* BMO Limbs */
 .bmo-limbs {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  width: 450px;
+  height: 450px;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 1;
 }
@@ -903,7 +905,7 @@ body {
   border-top-right-radius: 20px;
   border-bottom-right-radius: 20px;
   box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
-  z-index: 5;
+  z-index: 1;
   box-sizing: border-box;
   padding: 14px;
   display: flex;
@@ -980,6 +982,10 @@ body {
   opacity: 0.9;
 }
 
+#app-container.state-idle .screen-ticker {
+  display: none;
+}
+
 .ticker-wrap {
   white-space: nowrap;
   display: inline-block;
@@ -1000,9 +1006,10 @@ body {
   transform: translateY(-4px);
 }
 
-/* Hide standard status panel when screen ticker is active */
+/* Fade out standard status panel when screen ticker is active */
 #app-container:not(.state-idle) .status-panel {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Red Button interactivity pulse hint when active */
