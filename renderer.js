@@ -154,7 +154,7 @@ function handleHitchEvent(envelope) {
   // Extract and update metadata UI elements
   const metadata = extractMetadata(envelope);
   if (hudHeader) {
-    hudHeader.textContent = `[${metadata.harness} / ${metadata.event}]`;
+    hudHeader.textContent = metadata.hudText;
   }
   if (tickerWrap) {
     tickerWrap.textContent = metadata.tickerText;
@@ -236,74 +236,82 @@ if (btnRed) {
 
 function extractMetadata(envelope) {
   if (!envelope) {
-    return { harness: 'UNKNOWN', event: 'UNKNOWN', tickerText: 'No event envelope', consoleText: '' };
+    return { harness: 'UNKNOWN', event: 'UNKNOWN', hudText: 'NO EVENT', tickerText: 'No event envelope', consoleText: '' };
   }
-  
+
   const rawHarness = envelope.harness || 'unknown';
   const harness = rawHarness.toUpperCase();
-  const event = (envelope.hitch_event_type || 'unknown').toUpperCase();
-  
-  let tickerText = `${harness} | ${envelope.hitch_event_type || ''}`;
-  let consoleLines = [
-    `harness: ${rawHarness}`,
-    `event: ${envelope.hitch_event_type || ''}`
-  ];
-  
+  const eventType = envelope.hitch_event_type || 'unknown';
+  const event = eventType.toUpperCase();
   const payload = envelope.payload || {};
-  
-  if (envelope.hitch_event_type === 'tool.requested' || envelope.hitch_event_type === 'tool.completed') {
+
+  // --- HUD: event-contextual label (not harness) ---
+  let hudText = event;
+
+  // --- Ticker: event type + key params ---
+  const tickerParts = [eventType];
+
+  // --- Console: full payload dump via key-path flattening ---
+  const consoleLines = [`event: ${eventType}`, `harness: ${rawHarness}`];
+
+  function flattenObj(obj, prefix) {
+    for (const [k, v] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${k}` : k;
+      if (v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length > 0) {
+        flattenObj(v, path);
+      } else {
+        consoleLines.push(`${path}: ${Array.isArray(v) ? JSON.stringify(v) : String(v ?? '')}`);
+      }
+    }
+  }
+  if (Object.keys(payload).length > 0) flattenObj(payload, '');
+
+  // --- Event-specific HUD + ticker enrichment ---
+  if (eventType === 'tool.requested' || eventType === 'tool.completed') {
     const tool = payload.tool || {};
     if (tool.name) {
-      tickerText += ` | tool: ${tool.name}`;
-      consoleLines.push(`tool: ${tool.name}`);
+      hudText = `TOOL \u25b8 ${tool.name}`;
+      tickerParts.push(`tool: ${tool.name}`);
     }
-    if (tool.input) {
-      if (typeof tool.input === 'object' && tool.input !== null) {
-        for (const [k, v] of Object.entries(tool.input)) {
-          const valStr = typeof v === 'object' ? JSON.stringify(v) : v;
-          tickerText += ` | ${k}: "${valStr}"`;
-          consoleLines.push(`${k}: "${valStr}"`);
-        }
-      } else {
-        tickerText += ` | input: ${tool.input}`;
+    if (tool.input && typeof tool.input === 'object') {
+      for (const [k, v] of Object.entries(tool.input)) {
+        const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+        tickerParts.push(`${k}: "${valStr}"`);
       }
     }
-  } else if (envelope.hitch_event_type === 'llm.completed') {
+  } else if (eventType === 'llm.completed') {
     const llm = payload.llm || {};
     if (llm.finish_reason) {
-      tickerText += ` | finish: ${llm.finish_reason}`;
-      consoleLines.push(`finish: ${llm.finish_reason}`);
+      hudText = `LLM \u25b8 ${llm.finish_reason}`;
+      tickerParts.push(`finish: ${llm.finish_reason}`);
     }
     if (llm.usage) {
-      if (llm.usage.tokens !== undefined) {
-        tickerText += ` | tokens: ${llm.usage.tokens}`;
-        consoleLines.push(`tokens: ${llm.usage.tokens}`);
-      }
-      if (llm.usage.cost !== undefined) {
-        tickerText += ` | cost: $${llm.usage.cost}`;
-        consoleLines.push(`cost: $${llm.usage.cost}`);
-      }
+      if (llm.usage.tokens !== undefined) tickerParts.push(`tokens: ${llm.usage.tokens}`);
+      if (llm.usage.cost !== undefined) tickerParts.push(`cost: $${llm.usage.cost}`);
     }
-  } else if (envelope.hitch_event_type === 'turn.user_prompt') {
+  } else if (eventType === 'turn.user_prompt') {
     const turn = payload.turn || {};
     if (turn.prompt) {
-      const cleanedPrompt = turn.prompt.replace(/\r?\n/g, ' ');
-      tickerText += ` | prompt: "${cleanedPrompt}"`;
-      consoleLines.push(`prompt: "${cleanedPrompt}"`);
+      const short = turn.prompt.replace(/\r?\n/g, ' ');
+      hudText = `PROMPT \u25b8 ${rawHarness.toUpperCase()}`;
+      tickerParts.push(`prompt: "${short}"`);
     }
+  } else if (eventType === 'llm.requested') {
+    const llm = payload.llm || {};
+    hudText = llm.model ? `LLM \u25b8 ${llm.model}` : 'LLM \u25b8 pending';
+    if (llm.model) tickerParts.push(`model: ${llm.model}`);
+  } else {
+    // Default: category ▸ action
+    const parts = eventType.split('.');
+    hudText = parts.length >= 2
+      ? `${parts[0].toUpperCase()} \u25b8 ${parts.slice(1).join('.')}`
+      : event;
   }
-  
-  // Shorten ticker text if it is excessively long
-  if (tickerText.length > 200) {
-    tickerText = tickerText.substring(0, 197) + '...';
-  }
-  
-  return {
-    harness,
-    event,
-    tickerText,
-    consoleText: consoleLines.join('\n')
-  };
+
+  let tickerText = tickerParts.join(' | ');
+  if (tickerText.length > 200) tickerText = tickerText.substring(0, 197) + '...';
+
+  return { harness, event, hudText, tickerText, consoleText: consoleLines.join('\n') };
 }
 
 if (typeof module !== 'undefined') {

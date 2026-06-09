@@ -17,8 +17,9 @@ const testCases = [
     expected: {
       harness: 'OMP',
       event: 'TOOL.REQUESTED',
-      tickerText: 'OMP | tool.requested | tool: grep_search | query: "hitch_event_type"',
-      consoleText: 'harness: omp\nevent: tool.requested\ntool: grep_search\nquery: "hitch_event_type"'
+      hudText: 'TOOL \u25b8 grep_search',
+      tickerText: 'tool.requested | tool: grep_search | query: "hitch_event_type"',
+      consoleText: 'event: tool.requested\nharness: omp\ntool.name: grep_search\ntool.input.query: hitch_event_type'
     }
   },
   {
@@ -36,8 +37,9 @@ const testCases = [
     expected: {
       harness: 'CODEX',
       event: 'LLM.COMPLETED',
-      tickerText: 'CODEX | llm.completed | finish: stop | tokens: 120 | cost: $0.0024',
-      consoleText: 'harness: codex\nevent: llm.completed\nfinish: stop\ntokens: 120\ncost: $0.0024'
+      hudText: 'LLM \u25b8 stop',
+      tickerText: 'llm.completed | finish: stop | tokens: 120 | cost: $0.0024',
+      consoleText: 'event: llm.completed\nharness: codex\nllm.finish_reason: stop\nllm.usage.tokens: 120\nllm.usage.cost: 0.0024'
     }
   },
   {
@@ -54,8 +56,9 @@ const testCases = [
     expected: {
       harness: 'HERMES',
       event: 'TURN.USER_PROMPT',
-      tickerText: 'HERMES | turn.user_prompt | prompt: "Explain quantum computing"',
-      consoleText: 'harness: hermes\nevent: turn.user_prompt\nprompt: "Explain quantum computing"'
+      hudText: 'PROMPT \u25b8 HERMES',
+      tickerText: 'turn.user_prompt | prompt: "Explain quantum computing"',
+      consoleText: 'event: turn.user_prompt\nharness: hermes\nturn.prompt: Explain quantum computing'
     }
   }
 ];
