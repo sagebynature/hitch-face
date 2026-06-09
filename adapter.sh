@@ -7,7 +7,7 @@ set -e
 INPUT=$(cat)
 
 # Extract the hitch_event_type from the input JSON
-EVENT_TYPE=$(echo "$INPUT" | jq -r '.hitch_event_type' 2>/dev/null || echo "null")
+EVENT_TYPE=$(printf '%s\n' "$INPUT" | jq -r '.hitch_event_type' 2>/dev/null || echo "null")
 
 # Default port
 PORT=8888
@@ -17,7 +17,7 @@ CONFIG_PATH="$HOME/.config/hitch-face/config.toml"
 if [ -f "$CONFIG_PATH" ]; then
   # Parse port = <number> from the config file
   parsed_port=$(grep -E '^\s*port\s*=' "$CONFIG_PATH" | head -n 1 | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[:space:]')
-  if [ -n "$parsed_port" ]; then
+  if [[ "$parsed_port" =~ ^[0-9]+$ ]]; then
     PORT="$parsed_port"
   fi
 fi
