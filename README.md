@@ -1,47 +1,123 @@
 # Hitch Face (BMO Edition)
 
-A native desktop widget showing a beautifully animated, borderless, always-on-top BMO (from Adventure Time) whose expressions respond in real time to Hitch events.
+Animated desktop BMO widget that mirrors Hitch events in real time.
 
 ## Features
-- **Frameless/Borderless Window**: Clean 500x500px overlay.
-- **Always-on-Top**: Stays visible on top of other workspace windows.
-- **Interactive & Draggable**: Click and drag BMO's body to position it anywhere on screen.
-- **Lightweight Endpoint**: Spawns a local HTTP server on port `8888` receiving `POST /expression` calls.
-- **Rich CSS Animations**: Unique expressive faces, blinking console buttons, wiggling limbs, and color schemes corresponding to all 20 Hitch event types.
-- **Fail-Safe Hitch Integration**: Integrates directly as an observer shell handler that never blocks your agent.
 
-## Directory Structure
-- [main.js](file:///Users/sage/workspace/hitch-face/main.js): Electron process bootstrap, custom bouncing physics, & HTTP endpoint.
-- [index.html](file:///Users/sage/workspace/hitch-face/index.html): Layout structure for BMO's casing, retro screen, buttons, and limbs.
-- [style.css](file:///Users/sage/workspace/hitch-face/style.css): Vanilla CSS keyframes, variables, and themes mapping expressions to BMO face layouts & colors.
-- [renderer.js](file:///Users/sage/workspace/hitch-face/renderer.js): IPC mapping and state transition timers.
-- [adapter.sh](file:///Users/sage/workspace/hitch-face/adapter.sh): Bash adapter feeding standard input to `jq` and running `curl`.
-- [test-drive.sh](file:///Users/sage/workspace/hitch-face/test-drive.sh): Visual verification shell script to run through all expressions sequentially.
+- **Frameless/Borderless Widget**: Frameless 750x500 overlay that stays above other windows.
+- **Always-on-Top**: Always visible by default.
+- **Interactive & Draggable**: Position the widget anywhere on screen.
+- **Local Event Endpoint**: Starts a local HTTP endpoint at `127.0.0.1:8888`.
+- **Expression Mapping**: Supports all standard Hitch event types (session/turn/llm/tool/retry/subagent/error).
+- **Session-aware UI**: Keeps one window per `session_id`.
+- **Fail-safe Integration**: Hitch observer path never blocks the agent and recovers on malformed input.
 
-## How to Run
+## Project Files
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+- `main.js`: Electron bootstrap, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
+- `index.html`: Widget markup.
+- `style.css`: Styling and per-expression themes.
+- `renderer.js`: IPC event rendering, sound effects, metadata display.
+- `adapter.sh`: Hitch shell handler that posts events to the local endpoint.
+- `config.toml`: Runtime configuration options.
+- `install.sh`: Optional install/launcher helper.
+- `test-drive.sh`: Sends sample events for manual verification.
+- `tests/extract-metadata.test.js`: Unit test for metadata extraction.
 
-2. **Start the Desktop Widget**:
-   ```bash
-   npm start
-   ```
+## Requirements
 
-3. **Verify/Test Expressions**:
-   In another terminal, run the test-drive script to cycle through all 20 expressions:
-   ```bash
-   ./test-drive.sh
-   ```
+- Linux/macOS desktop environment (X11/Wayland or macOS windowing).
+- Node.js and npm.
+- `bash`, `jq`, and `curl` available in `PATH`.
 
-## Hitch Integration
-The adapter is registered as an observer in your global `~/.config/hitch/config.toml` under the `[handlers.hitch_face]` section:
+## Install
+
+### Option A — Run from source
+
+```bash
+git clone <repo-url>
+cd hitch-face
+npm install
+npm start
+```
+
+### Option B — Install script
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+This copies the extension to:
+
+- `~/.config/hitch/extensions/hitch-face` (app files)
+- `~/.local/bin/hitch-face` (launcher)
+
+And installs a default config file at:
+
+- `~/.config/hitch-face/config.toml`
+
+Run with:
+
+```bash
+hitch-face
+```
+
+## Runtime configuration
+
+Edit `~/.config/hitch-face/config.toml`.
+
+```toml
+movement_enabled = false
+speed = 1.0
+interval_ms = 100
+port = 8888
+ticker_speed_s = 5
+buffer_size = 500
+
+[colors]
+pi = "#4ca8a1"
+antigravity = "#de8a1d"
+```
+
+## Event API
+
+Widget listens on:
+
+- `POST /event`
+- `POST /expression` (legacy compatibility)
+
+### `/event` payload
+
+```json
+{
+  "hitch_event_type": "turn.assistant_completed",
+  "session_id": "my-session-id",
+  "harness": "codex",
+  "payload": {
+    "tool": {
+      "name": "calculator"
+    }
+  }
+}
+```
+
+### `/expression` payload
+
+```json
+{ "expression": "turn.assistant_completed" }
+```
+
+When using `/expression`, no `session_id` is required and session is created as `default-session` with harness set to `omp`.
+
+## Verify Hitch wiring
+
+Edit (or create) `~/.config/hitch/config.toml` and add:
+
 ```toml
 [handlers.hitch_face]
 type = "shell"
-command = ["/bin/bash", "/Users/sage/workspace/hitch-face/adapter.sh"]
+command = ["/bin/bash", "/ABSOLUTE/PATH/TO/hitch-face/adapter.sh"]
 hitch_events = ["*"]
 kind = "observer"
 timeout_ms = 1000
@@ -49,4 +125,23 @@ on_error = "fail_open"
 on_timeout = "fail_open"
 ```
 
-Once the Hitch serve daemon is running (e.g. `go run ./cmd/hitch serve`), any event received from Codex, Hermes, Pi, OMP, or OpenCode will automatically update the robot face expression on your screen!
+Notes:
+
+- Replace `/ABSOLUTE/PATH/TO/hitch-face/adapter.sh` with the actual path where `adapter.sh` lives.
+- If you used `install.sh`, use `~/.config/hitch/extensions/hitch-face/adapter.sh`.
+
+## Manual test
+
+With the widget running, run:
+
+```bash
+./test-drive.sh
+```
+
+That will POST all supported expressions in sequence to `http://127.0.0.1:8888/expression`.
+
+## Directory and event troubleshooting
+
+- If no widget appears, confirm no other process is occupying the configured `port`.
+- If a custom port is used, set the same value in `~/.config/hitch-face/config.toml`.
+- Ensure `adapter.sh` can run and that `jq`/`curl` are installed.
