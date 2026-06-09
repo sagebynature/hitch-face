@@ -209,7 +209,13 @@ const server = http.createServer((req, res) => {
           };
         }
         
-        if (expr && mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+        if (!expr) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'error', reason: 'Missing event type (hitch_event_type or expression)' }));
+          return;
+        }
+        
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
           mainWindow.webContents.send('hitch-event', envelope);
           console.log(`Event processed: ${expr}`);
 
@@ -231,6 +237,14 @@ const server = http.createServer((req, res) => {
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');
+  }
+});
+
+// Handle server startup and port conflict errors gracefully
+server.on('error', (err) => {
+  console.error('HTTP Server error:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${appConfig.port || 8888} is already in use by another process. Please close any other instances of hitch-face.`);
   }
 });
 
