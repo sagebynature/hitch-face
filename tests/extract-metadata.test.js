@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { extractMetadata } = require('../renderer.js');
+
 
 const testCases = [
   {
@@ -63,19 +63,26 @@ const testCases = [
   }
 ];
 
-console.log('Running metadata extraction unit tests...');
-let failed = 0;
+(async () => {
+  const { extractMetadata } = await import('../native/frontend/renderer.js');
 
-for (const tc of testCases) {
-  try {
-    const result = extractMetadata(tc.envelope);
-    assert.deepStrictEqual(result, tc.expected);
-    console.log(`✅ PASS: ${tc.name}`);
-  } catch (err) {
-    console.error(`❌ FAIL: ${tc.name}`);
-    console.error(err);
-    failed++;
+  console.log('Running metadata extraction unit tests...');
+  let failed = 0;
+
+  for (const tc of testCases) {
+    try {
+      const result = extractMetadata(tc.envelope);
+      assert.deepStrictEqual(result, tc.expected);
+      console.log(`✅ PASS: ${tc.name}`);
+    } catch (err) {
+      console.error(`❌ FAIL: ${tc.name}`);
+      console.error(err);
+      failed++;
+    }
   }
-}
 
-process.exit(failed > 0 ? 1 : 0);
+  process.exit(failed > 0 ? 1 : 0);
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

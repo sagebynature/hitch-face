@@ -421,6 +421,5 @@ function extractMetadata(envelope) {
   return { harness, event, hudText, tickerText, consoleText: consoleLines.join('\n') };
 }
 
-if (typeof module !== 'undefined') {
-  module.exports = { extractMetadata };
-}
+export { extractMetadata };
+

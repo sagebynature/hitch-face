@@ -154,7 +154,7 @@ const App = struct {
     fn app(self: *@This()) zero_native.App {
         return .{
             .context = self,
-            .name = "spike-zero-native",
+            .name = "hitch-face",
             .source = zero_native.frontend.productionSource(.{ .dist = "frontend/dist", .entry = "index.html" }),
             .source_fn = source,
             .start_fn = onStart,
@@ -386,9 +386,9 @@ const dev_origins = [_][]const u8{ "zero://app", "zero://inline", "http://127.0.
 pub fn main(init: std.process.Init) !void {
     var app_state = App.init(init.environ_map, init.io);
     try runner.runWithOptions(app_state.app(), .{
-        .app_name = "Hitch Face Spike",
-        .window_title = "Hitch Face Spike",
-        .bundle_id = "dev.hitch_face.spike",
+        .app_name = "Hitch Face",
+        .window_title = "Hitch Face",
+        .bundle_id = "dev.hitch_face.app",
         .icon_path = "assets/icon.icns",
         .bridge = app_state.bridge(),
         .security = .{ .navigation = .{ .allowed_origins = &dev_origins } },

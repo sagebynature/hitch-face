@@ -22,15 +22,15 @@ jobs:
           - os: macos-latest
             package-command: npm run dist:mac
             artifact-name: hitch-face-macos
-            artifact-path: spike-zero-native/zig-out/package/**/*.app
+            artifact-path: native/zig-out/package/**/*.app
           - os: windows-latest
             package-command: npm run dist:win
             artifact-name: hitch-face-windows
-            artifact-path: spike-zero-native/zig-out/package/**/*
+            artifact-path: native/zig-out/package/**/*
           - os: ubuntu-latest
             package-command: npm run dist:linux
             artifact-name: hitch-face-linux
-            artifact-path: spike-zero-native/zig-out/package/**/*
+            artifact-path: native/zig-out/package/**/*
 
     steps:
       - name: Checkout

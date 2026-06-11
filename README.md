@@ -15,10 +15,10 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 
 ## Project Files
 
-- `spike-zero-native/src/main.zig`: zero-native host, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
-- `spike-zero-native/frontend/index.html`: Widget markup.
-- `spike-zero-native/frontend/style.css`: Styling and per-expression themes.
-- `spike-zero-native/frontend/renderer.js`: zero-native bridge event rendering, sound effects, metadata display.
+- `native/src/main.zig`: zero-native host, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
+- `native/frontend/index.html`: Widget markup.
+- `native/frontend/style.css`: Styling and per-expression themes.
+- `native/frontend/renderer.js`: zero-native bridge event rendering, sound effects, metadata display.
 - `src/adapter.ts`: Dependency-free Hitch adapter source that forwards events to the local endpoint.
 - `config.toml`: Runtime configuration options.
 - `hitch-extension.toml`: Hitch extension manifest installed as `~/.config/hitch/extensions/hitch-face/config.toml`.
@@ -28,7 +28,7 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 - `tests/adapter.test.js`: Integration test for adapter forwarding/fail-open behavior.
 
 - `scripts/install-extension.js`: Shared installer helper for Hitch detection, extension install, and config seeding.
-- `spike-zero-native/app.zon`: zero-native app manifest.
+- `native/app.zon`: zero-native app manifest.
 - `Makefile`: Source build, test, install, and packaging targets.
 
 ## Requirements

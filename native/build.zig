@@ -27,7 +27,7 @@ const PackageTarget = enum {
 };
 
 const default_zero_native_path ="../node_modules/zero-native";
-const app_exe_name = "spike-zero-native";
+const app_exe_name = "hitch-face";
 
 pub fn build(b: *std.Build) void {
     const target = zeroNativeTarget(b);

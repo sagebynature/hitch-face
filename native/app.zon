@@ -1,10 +1,10 @@
 .{
-    .id = "dev.hitch_face.spike",
-    .name = "hitch-face-spike",
-    .display_name = "Hitch Face Spike",
+    .id = "dev.hitch_face.app",
+    .name = "hitch-face",
+    .display_name = "Hitch Face",
     .version = "0.1.0",
     .icons = .{ "assets/icon.icns" },
-    .platforms = .{ "macos", "linux" },
+    .platforms = .{ "macos", "windows", "linux" },
     .permissions = .{},
     .capabilities = .{ "webview", "js_bridge" },
     .bridge = .{
@@ -37,6 +37,6 @@
     .web_engine = "system",
     .cef = .{ .dir = "third_party/cef/macos", .auto_install = false },
     .windows = .{
-        .{ .label = "main", .title = "Hitch Face Spike", .width = 310, .height = 370, .restore_state = false },
+        .{ .label = "main", .title = "Hitch Face", .width = 310, .height = 370, .restore_state = false },
     },
 }

@@ -35,4 +35,4 @@ install-local:
 	./install.sh
 
 clean:
-	rm -rf dist release out spike-zero-native/zig-out spike-zero-native/.zig-cache spike-zero-native/frontend/dist
+	rm -rf dist release out native/zig-out native/.zig-cache native/frontend/dist native/tmp-home

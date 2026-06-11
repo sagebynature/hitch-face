@@ -13,10 +13,10 @@ release/
 *.rpm
 *.snap
 *.pkg
-spike-zero-native/zig-out/
-spike-zero-native/.zig-cache/
-spike-zero-native/frontend/dist/
-spike-zero-native/tmp-home/
+native/zig-out/
+native/.zig-cache/
+native/frontend/dist/
+native/tmp-home/
 
 # Logs
 logs/

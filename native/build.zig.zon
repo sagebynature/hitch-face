@@ -1,6 +1,6 @@
 .{
-    .name = .spike_zero_native,
-    .fingerprint = 0xd33724665a707070,
+    .name = .hitch_face,
+    .fingerprint = 0x398aa34996e8c66f,
     .version = "0.1.0",
     .minimum_zig_version = "0.16.0",
     .dependencies = .{},
