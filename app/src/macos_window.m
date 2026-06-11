@@ -1,4 +1,5 @@
 #import <AppKit/AppKit.h>
+#import <objc/message.h>
 #include <stdbool.h>
 
 static NSWindow *hitch_face_window_for_id(id host, unsigned long long window_id) {
@@ -21,6 +22,44 @@ static id hitch_face_host_for_context(void *platform_context) {
     void *host_ptr = *(void **)platform_context;
     if (!host_ptr) return nil;
     return (__bridge id)host_ptr;
+}
+
+static void hitch_face_make_view_transparent(NSView *view) {
+    if (!view) return;
+
+    view.wantsLayer = YES;
+    view.layer.opaque = NO;
+    view.layer.backgroundColor = NSColor.clearColor.CGColor;
+
+    Class web_view_class = NSClassFromString(@"WKWebView");
+    if (web_view_class && [view isKindOfClass:web_view_class]) {
+        if ([view respondsToSelector:@selector(setDrawsBackground:)]) {
+            ((void (*)(id, SEL, BOOL))objc_msgSend)(view, @selector(setDrawsBackground:), NO);
+        }
+        if (view.enclosingScrollView) {
+            view.enclosingScrollView.drawsBackground = NO;
+            view.enclosingScrollView.backgroundColor = NSColor.clearColor;
+        }
+    }
+
+    if ([view isKindOfClass:NSScrollView.class]) {
+        NSScrollView *scroll_view = (NSScrollView *)view;
+        scroll_view.drawsBackground = NO;
+        scroll_view.backgroundColor = NSColor.clearColor;
+    }
+
+    for (NSView *subview in view.subviews) {
+        hitch_face_make_view_transparent(subview);
+    }
+}
+
+static void hitch_face_refresh_window_transparency(NSWindow *window) {
+    if (!window) return;
+
+    [window setOpaque:NO];
+    [window setBackgroundColor:NSColor.clearColor];
+    hitch_face_make_view_transparent(window.contentView);
+    [window.contentView displayIfNeeded];
 }
 
 static void hitch_face_set_content_size(NSWindow *window, double width, double height) {
@@ -57,9 +96,7 @@ void hitch_face_configure_macos_window(void *platform_context, unsigned long lon
                                   NSWindowCollectionBehaviorStationary];
     [window setIgnoresMouseEvents:NO];
 
-    NSView *content = window.contentView;
-    content.wantsLayer = YES;
-    content.layer.backgroundColor = NSColor.clearColor.CGColor;
+    hitch_face_refresh_window_transparency(window);
 
     hitch_face_set_content_size(window, width, height);
 }
@@ -71,6 +108,24 @@ void hitch_face_resize_macos_window(void *platform_context, unsigned long long w
     if (!window) return;
 
     hitch_face_set_content_size(window, width, height);
+    hitch_face_refresh_window_transparency(window);
+}
+
+void hitch_face_hide_macos_window(void *platform_context, unsigned long long window_id) {
+    id host = hitch_face_host_for_context(platform_context);
+    NSWindow *window = hitch_face_window_for_id(host, window_id);
+    if (!window) return;
+
+    [window orderOut:nil];
+}
+
+void hitch_face_show_macos_window(void *platform_context, unsigned long long window_id) {
+    id host = hitch_face_host_for_context(platform_context);
+    NSWindow *window = hitch_face_window_for_id(host, window_id);
+    if (!window) return;
+
+    hitch_face_refresh_window_transparency(window);
+    [window makeKeyAndOrderFront:nil];
 }
 
 bool hitch_face_get_macos_window_position(void *platform_context, unsigned long long window_id, double *x, double *y) {

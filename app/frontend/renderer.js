@@ -10,6 +10,7 @@ const screenConsoleContent = typeof document !== 'undefined' ? document.getEleme
 const consoleFooter = typeof document !== 'undefined' ? document.querySelector('.console-footer') : null;
 const btnRed = typeof document !== 'undefined' ? document.querySelector('.btn-red') : null;
 const screenTerminal = typeof document !== 'undefined' ? document.querySelector('.screen-terminal') : null;
+const bmoBody = typeof document !== 'undefined' ? document.querySelector('.bmo-body') : null;
 
 let resetTimeout = null;
 let consoleBuffer = [];
@@ -285,6 +286,70 @@ if (zeroNativeBridge) {
     }, 250);
   })();
 }
+
+function isInteractiveDragTarget(target) {
+  return target instanceof Element && target.closest('.btn-red, #btn-power, #btn-sound, .console-drawer');
+}
+
+function bindWindowDrag() {
+  if (!bmoBody || !zeroNativeBridge) return;
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  let pendingDx = 0;
+  let pendingDy = 0;
+  let animationFrame = 0;
+
+  const flushDrag = () => {
+    animationFrame = 0;
+    if (!pendingDx && !pendingDy) return;
+    const dx = pendingDx;
+    const dy = pendingDy;
+    pendingDx = 0;
+    pendingDy = 0;
+    zeroNativeBridge.invoke('hitch.dragWindow', { dx, dy }).catch(() => {});
+  };
+
+  bmoBody.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || isInteractiveDragTarget(event.target)) return;
+    dragging = true;
+    lastX = event.screenX;
+    lastY = event.screenY;
+    bmoBody.classList.add('dragging');
+    bmoBody.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  bmoBody.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    pendingDx += event.screenX - lastX;
+    pendingDy += event.screenY - lastY;
+    lastX = event.screenX;
+    lastY = event.screenY;
+    if (!animationFrame) {
+      animationFrame = window.requestAnimationFrame(flushDrag);
+    }
+  });
+
+  const stopDrag = (event) => {
+    if (!dragging) return;
+    dragging = false;
+    if (animationFrame) {
+      window.cancelAnimationFrame(animationFrame);
+      flushDrag();
+    }
+    bmoBody.classList.remove('dragging');
+    if (bmoBody.hasPointerCapture(event.pointerId)) {
+      bmoBody.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  bmoBody.addEventListener('pointerup', stopDrag);
+  bmoBody.addEventListener('pointercancel', stopDrag);
+}
+
+bindWindowDrag();
 
 // Bind red button click to toggle console drawer
 async function setDrawerOpen(open) {

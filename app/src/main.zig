@@ -18,6 +18,8 @@ const default_harness = "default";
 extern fn hitch_face_configure_macos_window(platform_context: ?*anyopaque, window_id: u64, width: f64, height: f64) void;
 extern fn hitch_face_resize_macos_window(platform_context: ?*anyopaque, window_id: u64, width: f64, height: f64) void;
 extern fn hitch_face_close_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
+extern fn hitch_face_hide_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
+extern fn hitch_face_show_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
 extern fn hitch_face_get_macos_window_position(platform_context: ?*anyopaque, window_id: u64, x: *f64, y: *f64) bool;
 extern fn hitch_face_set_macos_window_position(platform_context: ?*anyopaque, window_id: u64, x: f64, y: f64) void;
 extern fn hitch_face_step_macos_window(platform_context: ?*anyopaque, window_id: u64, vx: *f64, vy: *f64, speed: f64) void;
@@ -91,6 +93,8 @@ const Session = struct {
     harness_len: usize = 0,
     window_id: zero_native.WindowId = 0,
     window_created: bool = false,
+    window_visible: bool = false,
+    event_received: bool = false,
     ready: bool = false,
     events: [max_events_per_session]QueuedEvent = undefined,
     event_count: usize = 0,
@@ -141,8 +145,8 @@ const App = struct {
     sessions: [max_sessions]Session = undefined,
     session_count: usize = 0,
     next_window_id: zero_native.WindowId = 1,
-    handlers: [6]zero_native.BridgeHandler = undefined,
-    policies: [6]zero_native.BridgeCommandPolicy = undefined,
+    handlers: [7]zero_native.BridgeHandler = undefined,
+    policies: [7]zero_native.BridgeCommandPolicy = undefined,
 
     fn init(env_map: *std.process.Environ.Map, io: std.Io) App {
         var state = App{ .env_map = env_map, .io = io };
@@ -170,6 +174,7 @@ const App = struct {
             .{ .name = "hitch.closeSession", .context = self, .invoke_fn = closeSession },
             .{ .name = "hitch.setExpression", .context = self, .invoke_fn = setExpression },
             .{ .name = "hitch.setDrawerOpen", .context = self, .invoke_fn = setDrawerOpen },
+            .{ .name = "hitch.dragWindow", .context = self, .invoke_fn = dragWindow },
         };
         self.policies = .{
             .{ .name = "hitch.getConfig", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
@@ -178,6 +183,7 @@ const App = struct {
             .{ .name = "hitch.closeSession", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.setExpression", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.setDrawerOpen", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.dragWindow", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
         };
         return .{ .policy = .{ .enabled = true, .commands = &self.policies }, .registry = .{ .handlers = &self.handlers } };
     }
@@ -190,8 +196,8 @@ const App = struct {
     fn onStart(context: *anyopaque, runtime: *zero_native.Runtime) anyerror!void {
         const self: *@This() = @ptrCast(@alignCast(context));
         self.runtime = runtime;
-        _ = try self.ensureSession(default_session_id, default_harness);
         configureNativeWindow(runtime, 1, closed_window_width, closed_window_height);
+        hideNativeWindow(runtime, 1);
         const thread = try std.Thread.spawn(.{}, serve, .{self});
         thread.detach();
         std.debug.print("Hitch Face zero-native listening on http://127.0.0.1:{d}/event\n", .{self.config.port});
@@ -202,12 +208,15 @@ const App = struct {
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
         for (self.sessions[0..self.session_count]) |*session| {
-            if (!session.active) continue;
+            if (!session.active or !session.event_received) continue;
             if (!session.window_created and session.window_id != 1) try self.createWindowForSession(runtime, session);
+            if (session.window_created and !session.window_visible) {
+                showNativeWindow(runtime, session.window_id);
+                session.window_visible = true;
+            }
             self.driveMovement(runtime, session);
         }
     }
-
 
     fn ensureSession(self: *@This(), session_id: []const u8, harness: []const u8) !*Session {
         if (self.findSessionById(session_id)) |session| return session;
@@ -285,20 +294,21 @@ const App = struct {
         if (!isLikelyJsonObject(body)) return error.PayloadMustBeObject;
 
         const expr = switch (kind) {
-            .expression => extractJsonString(body, "expression") orelse return error.MissingEventType,
-            .event => extractJsonString(body, "hitch_event_type") orelse return error.MissingEventType,
+            .expression => extractTopLevelJsonString(body, "expression") orelse return error.MissingEventType,
+            .event => extractTopLevelJsonString(body, "hitch_event_type") orelse return error.MissingEventType,
         };
         const envelope = switch (kind) {
             .expression => try std.fmt.bufPrint(envelope_out, "{{\"hitch_event_type\":\"{s}\",\"harness\":\"omp\",\"payload\":{{}}}}", .{expr}),
             .event => body,
         };
-        const harness = extractJsonString(envelope, "harness") orelse default_harness;
-        const session_id = extractJsonString(envelope, "session_id") orelse extractNestedSessionId(envelope) orelse default_session_id;
+        const harness = extractTopLevelJsonString(envelope, "harness") orelse default_harness;
+        const session_id = extractSessionId(envelope) orelse default_session_id;
 
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
         const session = try self.ensureSession(session_id, harness);
         session.enqueue(envelope);
+        session.event_received = true;
         if (self.config.movement_enabled) {
             if (containsEvent(&action_start_events, expr)) {
                 session.moving = true;
@@ -373,6 +383,20 @@ const App = struct {
         if (self.findSessionByWindow(window_id)) |session| session.drawer_open = open;
         self.mutex.unlock(self.io);
         return std.fmt.bufPrint(output, "{{\"ok\":true,\"open\":{s}}}", .{if (open) "true" else "false"});
+    }
+    fn dragWindow(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        const self: *@This() = @ptrCast(@alignCast(context));
+        const dx = extractJsonNumber(invocation.request.payload, "dx") orelse 0;
+        const dy = extractJsonNumber(invocation.request.payload, "dy") orelse 0;
+        const window_id = invocation.source.window_id;
+        if (self.runtime) |runtime| {
+            var x: f64 = 0;
+            var y: f64 = 0;
+            if (getNativeWindowPosition(runtime, window_id, &x, &y)) {
+                setNativeWindowPosition(runtime, window_id, x + dx, y - dy);
+            }
+        }
+        return std.fmt.bufPrint(output, "{{\"ok\":true}}", .{});
     }
 };
 
@@ -490,7 +514,8 @@ fn handleConnection(app: *App, stream: std.Io.net.Stream) !void {
 
 fn sendResponse(app: *App, stream: std.Io.net.Stream, status: u16, reason: []const u8, content_type: []const u8, body: []const u8) !void {
     var header: [384]u8 = undefined;
-    const response_header = try std.fmt.bufPrint(&header,
+    const response_header = try std.fmt.bufPrint(
+        &header,
         "HTTP/1.1 {d} {s}\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: POST, GET, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\nContent-Type: {s}\r\nContent-Length: {d}\r\nConnection: close\r\n\r\n",
         .{ status, reason, content_type, body.len },
     );
@@ -514,6 +539,18 @@ fn configureNativeWindow(runtime: *zero_native.Runtime, window_id: u64, width: f
 fn resizeNativeWindow(runtime: *zero_native.Runtime, window_id: u64, width: f64, height: f64) void {
     if (comptime @import("builtin").target.os.tag == .macos) {
         hitch_face_resize_macos_window(runtime.options.platform.services.context, window_id, width, height);
+    }
+}
+
+fn hideNativeWindow(runtime: *zero_native.Runtime, window_id: u64) void {
+    if (comptime @import("builtin").target.os.tag == .macos) {
+        hitch_face_hide_macos_window(runtime.options.platform.services.context, window_id);
+    }
+}
+
+fn showNativeWindow(runtime: *zero_native.Runtime, window_id: u64) void {
+    if (comptime @import("builtin").target.os.tag == .macos) {
+        hitch_face_show_macos_window(runtime.options.platform.services.context, window_id);
     }
 }
 
@@ -632,12 +669,92 @@ fn extractJsonString(json: []const u8, key: []const u8) ?[]const u8 {
     return value[0..end];
 }
 
-fn extractNestedSessionId(json: []const u8) ?[]const u8 {
-    if (extractJsonString(json, "session_id")) |id| return id;
-    if (std.mem.indexOf(u8, json, "\"session\"")) |session_pos| {
-        return extractJsonString(json[session_pos..], "id");
+fn extractTopLevelJsonString(json: []const u8, key: []const u8) ?[]const u8 {
+    const value = findTopLevelJsonValue(json, key) orelse return null;
+    return extractJsonStringValue(value);
+}
+
+fn findTopLevelJsonValue(json: []const u8, key: []const u8) ?[]const u8 {
+    var depth: usize = 0;
+    var in_string = false;
+    var escaped = false;
+    var i: usize = 0;
+
+    while (i < json.len) : (i += 1) {
+        const ch = json[i];
+        if (in_string) {
+            if (escaped) {
+                escaped = false;
+            } else if (ch == '\\') {
+                escaped = true;
+            } else if (ch == '"') {
+                in_string = false;
+            }
+            continue;
+        }
+
+        switch (ch) {
+            '"' => {
+                if (depth != 1) {
+                    in_string = true;
+                    continue;
+                }
+
+                const key_start = i + 1;
+                const key_end = std.mem.indexOfScalar(u8, json[key_start..], '"') orelse return null;
+                const actual_key = json[key_start .. key_start + key_end];
+                i = key_start + key_end;
+
+                var after_key = std.mem.trimStart(u8, json[i + 1 ..], &std.ascii.whitespace);
+                if (after_key.len == 0 or after_key[0] != ':') continue;
+                after_key = std.mem.trimStart(u8, after_key[1..], &std.ascii.whitespace);
+                if (std.mem.eql(u8, actual_key, key)) return after_key;
+            },
+            '{', '[' => depth += 1,
+            '}', ']' => {
+                if (depth == 0) return null;
+                depth -= 1;
+            },
+            else => {},
+        }
     }
     return null;
+}
+
+fn extractJsonStringValue(value: []const u8) ?[]const u8 {
+    if (value.len == 0 or value[0] != '"') return null;
+    const string_value = value[1..];
+    const end = std.mem.indexOfScalar(u8, string_value, '"') orelse return null;
+    return string_value[0..end];
+}
+
+fn extractPayloadSessionId(json: []const u8) ?[]const u8 {
+    const payload = findTopLevelJsonValue(json, "payload") orelse return null;
+    const session = findTopLevelJsonValue(payload, "session") orelse return null;
+    return extractTopLevelJsonString(session, "id");
+}
+
+fn extractSessionId(json: []const u8) ?[]const u8 {
+    if (extractTopLevelJsonString(json, "session_id")) |id| return id;
+    return extractPayloadSessionId(json);
+}
+fn extractJsonNumber(json: []const u8, key: []const u8) ?f64 {
+    var needle_buf: [64]u8 = undefined;
+    if (key.len + 4 > needle_buf.len) return null;
+    const needle = std.fmt.bufPrint(&needle_buf, "\"{s}\"", .{key}) catch return null;
+    const key_pos = std.mem.indexOf(u8, json, needle) orelse return null;
+    const after_key = json[key_pos + needle.len ..];
+    const colon = std.mem.indexOfScalar(u8, after_key, ':') orelse return null;
+    const value = std.mem.trimStart(u8, after_key[colon + 1 ..], &std.ascii.whitespace);
+    if (value.len == 0) return null;
+
+    var end: usize = 0;
+    while (end < value.len) : (end += 1) {
+        const ch = value[end];
+        if (!(std.ascii.isDigit(ch) or ch == '-' or ch == '+' or ch == '.' or ch == 'e' or ch == 'E')) break;
+    }
+    if (end == 0) return null;
+    return std.fmt.parseFloat(f64, value[0..end]) catch null;
 }
 
 fn containsEvent(comptime events: []const []const u8, expr: []const u8) bool {
@@ -647,6 +764,12 @@ fn containsEvent(comptime events: []const []const u8, expr: []const u8) bool {
 
 test "extracts expression payload" {
     try std.testing.expectEqualStrings("turn.completed", extractJsonString("{\"expression\":\"turn.completed\"}", "expression").?);
+}
+test "extracts numeric bridge payload fields" {
+    const payload = "{\"dx\":12.5,\"dy\":-3,\"open\":true}";
+    try std.testing.expectEqual(@as(f64, 12.5), extractJsonNumber(payload, "dx").?);
+    try std.testing.expectEqual(@as(f64, -3), extractJsonNumber(payload, "dy").?);
+    try std.testing.expect(extractJsonNumber(payload, "open") == null);
 }
 
 test "parses config values and colors" {
@@ -669,7 +792,32 @@ test "parses config values and colors" {
 
 test "session id fallback extracts nested payload session" {
     const body = "{\"hitch_event_type\":\"turn.started\",\"payload\":{\"session\":{\"id\":\"abc\"}}}";
-    try std.testing.expectEqualStrings("abc", extractNestedSessionId(body).?);
+    try std.testing.expectEqualStrings("abc", extractSessionId(body).?);
+}
+
+test "session id ignores nested non-session payload fields" {
+    const body = "{\"hitch_event_type\":\"tool.requested\",\"payload\":{\"tool\":{\"input\":{\"session_id\":\"event-local\"}}}}";
+    try std.testing.expect(extractSessionId(body) == null);
+}
+
+test "session id ignores nested payload session objects outside payload session" {
+    const body = "{\"hitch_event_type\":\"tool.requested\",\"payload\":{\"tool\":{\"input\":{\"session\":{\"id\":\"event-local\"}}}}}";
+    try std.testing.expect(extractSessionId(body) == null);
+}
+
+test "session id prefers top-level session id" {
+    const body = "{\"hitch_event_type\":\"tool.requested\",\"session_id\":\"session-1\",\"payload\":{\"tool\":{\"input\":{\"session_id\":\"event-local\"}}}}";
+    try std.testing.expectEqualStrings("session-1", extractSessionId(body).?);
+}
+
+test "session starts hidden until an event is received" {
+    var session: Session = undefined;
+    session.init("s", "h", 1);
+    try std.testing.expect(session.window_created);
+    try std.testing.expect(!session.window_visible);
+    try std.testing.expect(!session.event_received);
+    session.event_received = true;
+    try std.testing.expect(session.event_received);
 }
 
 test "session queue drops oldest when full" {
