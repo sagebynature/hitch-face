@@ -42,10 +42,78 @@ jobs:
           node-version: '22.12.0'
           cache: npm
 
-      - name: Setup Zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.16.0
+      - name: Install Zig
+        shell: bash
+        run: |
+          node <<'NODE'
+          (async () => {
+          const childProcess = require('node:child_process');
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const os = require('node:os');
+          const path = require('node:path');
+
+          const version = '0.16.0';
+          const platform = {
+            darwin: 'macos',
+            linux: 'linux',
+            win32: 'windows',
+          }[process.platform];
+          const arch = {
+            x64: 'x86_64',
+            arm64: 'aarch64',
+          }[process.arch];
+
+          if (!platform || !arch) {
+            throw new Error(`Unsupported Zig runner target: ${process.platform}-${process.arch}`);
+          }
+
+          const target = `${arch}-${platform}`;
+          const response = await fetch('https://ziglang.org/download/index.json');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch Zig download index: ${response.status} ${response.statusText}`);
+          }
+
+          const index = await response.json();
+          const download = index[version]?.[target];
+          if (!download?.tarball) {
+            throw new Error(`No Zig ${version} download found for ${target}`);
+          }
+
+          const archiveResponse = await fetch(download.tarball);
+          if (!archiveResponse.ok) {
+            throw new Error(`Failed to download ${download.tarball}: ${archiveResponse.status} ${archiveResponse.statusText}`);
+          }
+
+          const archiveBuffer = Buffer.from(await archiveResponse.arrayBuffer());
+          const actualSha = crypto.createHash('sha256').update(archiveBuffer).digest('hex');
+          if (download.shasum && actualSha !== download.shasum) {
+            throw new Error(`Zig archive checksum mismatch: expected ${download.shasum}, got ${actualSha}`);
+          }
+
+          const archivePath = path.join(os.tmpdir(), path.basename(new URL(download.tarball).pathname));
+          const extractDir = path.join(os.tmpdir(), `zig-${version}`);
+          fs.writeFileSync(archivePath, archiveBuffer);
+          fs.rmSync(extractDir, { recursive: true, force: true });
+          fs.mkdirSync(extractDir, { recursive: true });
+          childProcess.execFileSync('tar', ['-xf', archivePath, '-C', extractDir], { stdio: 'inherit' });
+
+          const [zigDirName] = fs.readdirSync(extractDir);
+          if (!zigDirName) {
+            throw new Error(`Zig archive ${archivePath} did not extract a root directory`);
+          }
+
+          const zigDir = path.join(extractDir, zigDirName);
+          fs.appendFileSync(process.env.GITHUB_PATH, `${zigDir}${os.EOL}`);
+          console.log(`Installed Zig ${version} for ${target} at ${zigDir}`);
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Verify Zig
+        run: zig version
 
       - name: Install Linux system WebView dependencies
         if: runner.os == 'Linux'
