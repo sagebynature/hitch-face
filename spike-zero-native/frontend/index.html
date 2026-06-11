@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Hitch BMO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app-container" class="state-idle">
+    <div class="bmo-relative-container">
+      <!-- Side Console Drawer (Slides out from behind BMO) -->
+      <div class="console-drawer">
+        <div>
+          <div class="console-header">>_ Hitch Log Console</div>
+          <div class="console-content">
+            <!-- Log text updated dynamically -->
+          </div>
+        </div>
+        <div class="console-footer">Status: Idle</div>
+      </div>
+
+      <!-- BMO Main Body (Draggable) -->
+      <div class="bmo-body">
+        <!-- Side Text printed on BMO's body -->
+        <div class="bmo-brand-left">B</div>
+        <div class="bmo-brand-right">MO</div>
+
+        <!-- Screen Section -->
+        <div class="bmo-screen-bezel">
+          <div class="bmo-screen">
+            <div class="scanline"></div>
+
+            <!-- Screen Terminal Background -->
+            <div class="screen-terminal">
+              <div class="session-id-header">SESSION_ID: <span id="session-id-value">PENDING</span></div>
+              <div id="screen-console-content" class="screen-console-content"></div>
+            </div>
+
+            <!-- Screen HUD Details -->
+            <div class="hud-header"></div>
+
+            <!-- Face -->
+            <div class="bmo-face">
+              <div class="bmo-eyes">
+                <div class="bmo-eye left">
+                  <div class="bmo-pupil"></div>
+                  <div class="bmo-eye-symbol"></div>
+                </div>
+                <div class="bmo-eye right">
+                  <div class="bmo-pupil"></div>
+                  <div class="bmo-eye-symbol"></div>
+                </div>
+              </div>
+
+              <div class="bmo-mouth"></div>
+            </div>
+
+            <!-- Status Indicator (retro LCD style) -->
+            <!-- <div class="status-panel">
+            <span class="status-label">STANDBY</span>
+          </div> -->
+
+            <!-- Scrolling Ticker at bottom of Screen -->
+            <div class="screen-ticker">
+              <div class="ticker-wrap"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cartridge Slot -->
+        <div class="bmo-cartridge-slot"></div>
+
+        <!-- Controls Area -->
+        <div class="bmo-controls">
+          <div class="bmo-controls-row">
+            <!-- D-Pad -->
+            <div class="bmo-dpad">
+              <div class="dpad-axis horizontal"></div>
+              <div class="dpad-axis vertical"></div>
+              <div class="dpad-center"></div>
+            </div>
+
+            <!-- Speaker Grill -->
+            <div class="bmo-speaker">
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+              <div class="speaker-line"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bmo-buttons">
+              <div class="btn-yellow"></div>
+              <div class="btn-red"></div>
+            </div>
+          </div>
+
+          <div class="bmo-controls-row-bottom">
+            <!-- Blue Triangle Button & Green Circle Button -->
+            <div class="btn-triangle-blue" id="btn-power" title="Power"></div>
+            <div class="btn-green-small" id="btn-sound" title="Toggle Sound"></div>
+          </div>
+        </div>
+      </div>
+
+
+    </div> <!-- Close bmo-relative-container -->
+  </div> <!-- Close app-container -->
+
+  <script type="module" src="renderer.js"></script>
+</body>
+
+</html>

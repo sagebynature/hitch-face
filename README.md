@@ -15,10 +15,10 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 
 ## Project Files
 
-- `main.js`: Electron bootstrap, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
-- `index.html`: Widget markup.
-- `style.css`: Styling and per-expression themes.
-- `renderer.js`: IPC event rendering, sound effects, metadata display.
+- `spike-zero-native/src/main.zig`: zero-native host, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
+- `spike-zero-native/frontend/index.html`: Widget markup.
+- `spike-zero-native/frontend/style.css`: Styling and per-expression themes.
+- `spike-zero-native/frontend/renderer.js`: zero-native bridge event rendering, sound effects, metadata display.
 - `src/adapter.ts`: Dependency-free Hitch adapter source that forwards events to the local endpoint.
 - `config.toml`: Runtime configuration options.
 - `hitch-extension.toml`: Hitch extension manifest installed as `~/.config/hitch/extensions/hitch-face/config.toml`.
@@ -28,16 +28,16 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 - `tests/adapter.test.js`: Integration test for adapter forwarding/fail-open behavior.
 
 - `scripts/install-extension.js`: Shared installer helper for Hitch detection, extension install, and config seeding.
-- `electron-builder.yml`: macOS/Windows installer configuration.
+- `spike-zero-native/app.zon`: zero-native app manifest.
 - `Makefile`: Source build, test, install, and packaging targets.
 
 ## Requirements
 
-- macOS or Windows for packaged installers. Source runs also work on Linux desktop environments supported by Electron.
+- macOS for the current locally verified zero-native package. Windows/Linux package targets are wired for CI verification.
 - [Hitch](https://github.com/sagebynature/hitch) for event integration.
-- Node.js 22.12+ and npm.
-  - Source builds use Node/npm to build and run the Electron app.
-  - Packaged installs still require `node` to be available where Hitch runs the extension because the Hitch extension manifest executes `command = ["node", "adapter.js"]`.
+- Node.js 22.12+, npm, and Zig 0.16.
+  - Source builds use Node/npm for the Hitch adapter and frontend assets.
+  - Packaged/source installs still require `node` where Hitch runs the extension because the Hitch extension manifest executes `command = ["node", "adapter.js"]`.
 - `bash` and `curl` are only needed for the source install script and `test-drive.sh`.
 
 Install Hitch first if it is not already installed:
@@ -50,10 +50,10 @@ curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch/main/scripts/ins
 
 ### Option A — Release installer
 
-Download the macOS or Windows artifact from the GitHub release matching the semantic version you want.
+Download the artifact from the GitHub release matching the semantic version you want.
 
-- macOS: install `Hitch-Face-<version>-mac-<arch>.pkg`, then launch `Hitch Face` from Finder or run `hitch-face` if the CLI launcher was installed.
-- Windows: run `Hitch-Face-<version>-win-x64.exe`, then launch from the Start Menu or use the installed `hitch-face.cmd` launcher.
+- macOS: run the packaged zero-native app artifact.
+- Windows/Linux: package targets are wired in CI; verify platform artifacts before publishing them as supported.
 
 During install, Hitch Face checks for Hitch and installs the extension into Hitch when Hitch is present. If Hitch is missing, the app install can still complete, but event integration will not work until Hitch is installed and the extension helper is rerun.
 
@@ -70,12 +70,13 @@ make start
 Useful Makefile targets:
 
 ```bash
-make build              # Build the Hitch adapter
+make build              # Build the Hitch adapter and zero-native app
 make test               # Run unit/integration tests
 make install-extension  # Install only the Hitch extension/config
 make install-local      # Source install app + extension + CLI launcher
-make package-mac        # Build macOS installer on macOS
-make package-win        # Build Windows installer on Windows/CI
+make package-mac        # Build macOS zero-native package on macOS
+make package-win        # Build Windows package on Windows/CI
+make package-linux      # Build Linux package on Linux/CI
 ```
 
 ### Option C — Source install script
@@ -87,7 +88,7 @@ curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch-face/main/instal
 This installs:
 
 - `~/.config/hitch/extensions/hitch-face` (adapter-only Hitch extension)
-- `~/.local/share/hitch-face` (Electron desktop app)
+- `~/.local/share/hitch-face` (zero-native desktop app)
 - `~/.local/bin/hitch-face` (launcher)
 
 And installs a default config file at:
@@ -103,7 +104,7 @@ hitch-face
 ## Runtime configuration
 
 Edit `~/.config/hitch-face/config.toml` to configure the desktop widget process.
-This file is read by Electron when it starts; the Hitch adapter does not read it.
+This file is read by the zero-native host when it starts; the Hitch adapter does not read it.
 
 ```toml
 movement_enabled = false

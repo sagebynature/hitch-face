@@ -1,0 +1,42 @@
+.{
+    .id = "dev.hitch_face.spike",
+    .name = "hitch-face-spike",
+    .display_name = "Hitch Face Spike",
+    .version = "0.1.0",
+    .icons = .{ "assets/icon.icns" },
+    .platforms = .{ "macos", "linux" },
+    .permissions = .{},
+    .capabilities = .{ "webview", "js_bridge" },
+    .bridge = .{
+        .commands = .{
+            .{ .name = "hitch.getConfig", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.getSession", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.nextEvents", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.closeSession", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.setExpression", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.setDrawerOpen", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+        },
+    },
+    .frontend = .{
+        .dist ="frontend/dist",
+        .entry = "index.html",
+        .spa_fallback = true,
+        .dev = .{
+            .url ="http://127.0.0.1:5173/",
+            .command = .{ "npm", "--prefix", "frontend", "run", "dev", "--", "--host", "127.0.0.1" },
+            .ready_path = "/",
+            .timeout_ms = 30000,
+        },
+    },
+    .security = .{
+        .navigation = .{
+            .allowed_origins = .{ "zero://app", "zero://inline", "http://127.0.0.1:5173" },
+            .external_links = .{ .action = "deny" },
+        },
+    },
+    .web_engine = "system",
+    .cef = .{ .dir = "third_party/cef/macos", .auto_install = false },
+    .windows = .{
+        .{ .label = "main", .title = "Hitch Face Spike", .width = 310, .height = 370, .restore_state = false },
+    },
+}

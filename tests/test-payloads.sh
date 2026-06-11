@@ -3,8 +3,8 @@
 # test-payloads.sh — End-to-end payload simulation for BMO
 #
 # Sends a sequence of realistic Hitch event envelopes to
-# the /event endpoint. Run this while Electron is running:
-#   npm start &
+# the /event endpoint. Run this while the zero-native app is running:
+#   npm start
 #   bash tests/test-payloads.sh
 # =========================================================
 
@@ -21,7 +21,7 @@ send_event() {
     -H "Content-Type: application/json" \
     -d @- \
     "${BASE}/event" > /dev/null 2>&1 || {
-      echo "  ⚠️  curl failed – is Electron running on port ${PORT}?"
+      echo "  ⚠️  curl failed – is Hitch Face running on port ${PORT}?"
       return 0
     }
   echo "  ✅ OK"

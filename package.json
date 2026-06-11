@@ -2,24 +2,24 @@
   "name": "hitch-face",
   "version": "0.0.1",
   "description": "Desktop widget displaying animated robot face expressions matching Hitch events",
-  "main": "main.js",
   "productName": "Hitch Face",
   "scripts": {
-    "start": "electron .",
-    "build": "npm run build:adapter",
+    "start": "cd spike-zero-native && zig build run",
+    "build": "npm run build:adapter && npm run build:native",
     "build:adapter": "tsc -p tsconfig.adapter.json",
-    "dist": "npm run build && electron-builder --publish never",
-    "dist:mac": "npm run build && electron-builder --mac --publish never",
-    "dist:win": "npm run build && electron-builder --win --publish never",
+    "build:native": "cd spike-zero-native && zig build frontend-build && zig build",
+    "dist": "npm run dist:mac",
+    "dist:mac": "npm run build:adapter && cd spike-zero-native && zig build package -Dpackage-target=macos",
+    "dist:win": "npm run build:adapter && cd spike-zero-native && zig build package -Dpackage-target=windows",
+    "dist:linux": "npm run build:adapter && cd spike-zero-native && zig build package -Dpackage-target=linux",
     "install:extension": "npm run build:adapter && node scripts/install-extension.js",
     "test": "npm run build:adapter && node tests/extract-metadata.test.js && node tests/adapter.test.js && node tests/install-extension.test.js"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^24.13.1",
-    "electron": "^42.3.3",
-    "electron-builder": "^26.15.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zero-native": "^0.2.0"
   },
   "engines": {
     "node": ">=22.12.0"

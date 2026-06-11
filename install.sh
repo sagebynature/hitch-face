@@ -1,53 +1,38 @@
 #!/bin/bash
 
-# Exit on error
 set -e
 
 echo "=== Hitch-Face Desktop Widget Installer ==="
 
-# Define directories
 APP_DIR="$HOME/.local/share/hitch-face"
 BIN_DIR="$HOME/.local/bin"
 
-# Ensure local build tooling is available, then compile the dependency-free
-# Hitch adapter that the extension runs.
 if [ ! -x "./node_modules/.bin/tsc" ]; then
   echo "Installing local build dependencies..."
   npm install
 fi
 
-echo "Building Hitch adapter..."
-npm run build:adapter
+echo "Building Hitch adapter and zero-native desktop app..."
+npm run build
 
 echo "Installing Hitch extension adapter..."
 node scripts/install-extension.js
-# Install the Electron desktop app separately from the Hitch extension.
+
 echo "Installing desktop app to $APP_DIR..."
 rm -rf "$APP_DIR"
-mkdir -p "$APP_DIR"
-cp package.json package-lock.json "$APP_DIR/"
-cp main.js index.html style.css renderer.js config.toml hitch-extension.toml "$APP_DIR/"
+mkdir -p "$APP_DIR/frontend" "$APP_DIR/assets"
+cp spike-zero-native/zig-out/bin/spike-zero-native "$APP_DIR/hitch-face"
+cp -R spike-zero-native/frontend/dist "$APP_DIR/frontend/dist"
+cp -R spike-zero-native/assets/. "$APP_DIR/assets/"
+cp spike-zero-native/app.zon "$APP_DIR/app.zon"
 
-echo "Installing desktop app runtime dependencies in $APP_DIR..."
-(
-  cd "$APP_DIR"
-  npm install --omit=dev
-)
-
-
-
-# Create launcher script
 mkdir -p "$BIN_DIR"
 LAUNCHER="$BIN_DIR/hitch-face"
 echo "Creating launcher script at $LAUNCHER..."
 cat << 'EOF' > "$LAUNCHER"
 #!/bin/bash
 cd "$HOME/.local/share/hitch-face"
-if [ -f "./node_modules/.bin/electron" ]; then
-  exec ./node_modules/.bin/electron . "$@"
-else
-  exec npm start "$@"
-fi
+exec ./hitch-face "$@"
 EOF
 
 chmod +x "$LAUNCHER"

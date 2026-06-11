@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Electron build output
+# Build/package output
 dist/
 out/
 build/
@@ -13,6 +13,10 @@ release/
 *.rpm
 *.snap
 *.pkg
+spike-zero-native/zig-out/
+spike-zero-native/.zig-cache/
+spike-zero-native/frontend/dist/
+spike-zero-native/tmp-home/
 
 # Logs
 logs/
