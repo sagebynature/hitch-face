@@ -10,9 +10,12 @@ pub const StdoutTraceSink = struct {
     fn write(context: *anyopaque, record: zero_native.trace.Record) zero_native.trace.WriteError!void {
         _ = context;
         if (!shouldTrace(record)) return;
+        var normalized = record;
+        normalized.level = consoleTraceLevel(record);
+        if (normalized.level == .debug) return;
         var buffer: [1024]u8 = undefined;
         var writer = std.Io.Writer.fixed(&buffer);
-        zero_native.trace.formatText(record, &writer) catch return error.OutOfSpace;
+        zero_native.trace.formatText(normalized, &writer) catch return error.OutOfSpace;
         std.debug.print("{s}\n", .{writer.buffered()});
     }
 };
@@ -44,7 +47,6 @@ pub const RunOptions = struct {
     }
 };
 const face_window_size = zero_native.geometry.SizeF.init(310, 370);
-
 
 pub fn runWithOptions(app: zero_native.App, options: RunOptions, init: std.process.Init) !void {
     if (build_options.debug_overlay) {
@@ -198,6 +200,20 @@ fn runWindows(app: zero_native.App, options: RunOptions, init: std.process.Init)
     });
 
     try runtime.run(app);
+}
+
+fn consoleTraceLevel(record: zero_native.trace.Record) zero_native.trace.Level {
+    if (std.mem.eql(u8, record.name, "platform.event")) {
+        for (record.fields) |field| {
+            if (!std.mem.eql(u8, field.key, "event")) continue;
+            if (field.value != .string) continue;
+            if (std.mem.eql(u8, field.value.string, "frame_requested")) return .debug;
+            if (std.mem.eql(u8, field.value.string, "bridge_message")) return .debug;
+        }
+    }
+    if (std.mem.eql(u8, record.name, "runtime.frame")) return .debug;
+    if (std.mem.eql(u8, record.name, "bridge.dispatch")) return .debug;
+    return record.level;
 }
 
 fn shouldTrace(record: zero_native.trace.Record) bool {

@@ -53,3 +53,5 @@ temp/
 .omx/
 .omo/
 
+# Symlinks
+.config

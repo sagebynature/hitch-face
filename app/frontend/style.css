@@ -30,11 +30,6 @@ body {
   display: block;
   transition: all 0.5s ease;
 }
-body.drawer-open,
-body.drawer-open #app-container,
-body.drawer-open .bmo-relative-container {
-  width: 510px;
-}
 
 
 .bmo-relative-container {
@@ -116,6 +111,10 @@ body.drawer-open .bmo-relative-container {
   overflow: hidden;
   box-shadow: inset 0 4px 10px rgba(0,0,0,0.15);
   transition: background-color 0.5s ease;
+  cursor: zoom-in;
+}
+.bmo-screen.log-focused {
+  cursor: zoom-out;
 }
 
 /* Screen Terminal Background */
@@ -131,7 +130,11 @@ body.drawer-open .bmo-relative-container {
   font-size: 7px;
   color: var(--face-color);
   opacity: 0.25; /* Sufficiently dimmed */
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--face-color) 55%, transparent) transparent;
   text-align: left;
   z-index: 1;
   line-height: 1.3;
@@ -156,6 +159,19 @@ body.drawer-open .bmo-relative-container {
 .screen-console-content {
   word-break: break-all;
   white-space: pre-wrap;
+}
+
+.screen-terminal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.screen-terminal::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--face-color) 55%, transparent);
+  border-radius: 999px;
+}
+
+.screen-terminal::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .screen-console-content span {
@@ -190,6 +206,22 @@ body.drawer-open .bmo-relative-container {
   transition: transform 0.3s ease;
   position: relative;
   z-index: 10;
+}
+
+.bmo-screen.log-focused .screen-terminal {
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+  color: var(--face-color);
+  opacity: 0.95;
+  text-shadow: 0 0 1px var(--bg-color);
+  z-index: 20;
+}
+
+.bmo-screen.log-focused .session-id-header {
+  opacity: 0.9;
+}
+
+.bmo-screen.log-focused .scanline {
+  z-index: 21;
 }
 
 /* Eyes Layout */
@@ -849,86 +881,9 @@ body.drawer-open .bmo-relative-container {
 }
 
 /* ==========================================================================
-   Hitch Metadata Display (Screen HUD, Ticker, and Drawer)
+   Hitch Metadata Display (Screen HUD and Ticker)
    ========================================================================== */
 
-/* Side Console Drawer */
-.console-drawer {
-  position: absolute;
-  top: 50%;
-  left: 310px;
-  transform: translateY(-50%) scaleX(0);
-  transform-origin: left center;
-  width: 200px;
-  height: 270px;
-  background: #1e293b;
-  border: 3px solid #334155;
-  border-left: none;
-  border-top-right-radius: 20px;
-  border-bottom-right-radius: 20px;
-  box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
-  z-index: 1;
-  box-sizing: border-box;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Open Drawer State class applied to app-container */
-#app-container.drawer-open .console-drawer {
-  transform: translateY(-50%) scaleX(1);
-}
-
-.console-header {
-  font-size: 10px;
-  font-weight: 800;
-  color: #e11d48;
-  border-bottom: 1px solid rgba(225, 29, 72, 0.2);
-  padding-bottom: 4px;
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.console-content {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  color: #cbd5e1;
-  flex-grow: 1;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-y: auto;
-}
-
-.console-content::-webkit-scrollbar {
-  width: 6px;
-}
-.console-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-}
-.console-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-}
-.console-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.console-content span {
-  color: #fb7185;
-}
-
-.console-footer {
-  font-size: 8px;
-  color: #64748b;
-  text-align: right;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 4px;
-  margin-top: 4px;
-}
 
 /* Screen HUD & Ticker Elements */
 .hud-header {
@@ -991,22 +946,3 @@ body.drawer-open .bmo-relative-container {
   pointer-events: none;
 }
 
-/* Red Button interactivity pulse hint when active */
-#app-container:not(.state-idle) .btn-red {
-  position: relative;
-}
-#app-container:not(.state-idle) .btn-red::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 50%;
-  border: 1px dashed #e11d48;
-  animation: button-pulse 10s linear infinite;
-  pointer-events: none;
-}
-@keyframes button-pulse {
-  100% { transform: rotate(360deg); }
-}

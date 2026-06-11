@@ -117,9 +117,11 @@ ticker_speed_s = 5
 buffer_size = 500
 
 [colors]
+# `default` is used before an event identifies a harness. If omitted, `pi`,
+# then `omp`, then the first configured color is used as the startup fallback.
+default = "#4ca8a1"
 pi = "#4ca8a1"
 antigravity = "#de8a1d"
-```
 
 ## Event API
 

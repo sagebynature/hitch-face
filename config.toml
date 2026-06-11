@@ -13,15 +13,16 @@ interval_ms = 100
 port = 8888
 
 # Ticker scroll speed in seconds per cycle — lower is faster (default: 15)
-ticker_speed_s = 5
+ticker_speed_s = 2
 
 # Maximum number of lines to retain in the console buffer (default: 500)
 buffer_size = 500
 
 # Custom casing colors for different harnesses
 [colors]
-pi = "#4ca8a1"
+default = "#4ca8a1"
 omp = "#4ca8a1"
+pi = "#4047FF"
 hermes = "#e4c160"
 opencode = "#B8B1B1"
 codex = "#4047FF"

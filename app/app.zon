@@ -14,7 +14,7 @@
             .{ .name = "hitch.nextEvents", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.closeSession", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.setExpression", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
-            .{ .name = "hitch.setDrawerOpen", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
+            .{ .name = "hitch.dragWindow", .origins = .{ "zero://app", "http://127.0.0.1:5173" } },
         },
     },
     .frontend = .{

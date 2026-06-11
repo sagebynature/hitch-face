@@ -5,11 +5,9 @@ const sessionValue = typeof document !== 'undefined' ? document.getElementById('
 const statusLabel = typeof document !== 'undefined' ? document.querySelector('.status-label') : null;
 const hudHeader = typeof document !== 'undefined' ? document.querySelector('.hud-header') : null;
 const tickerWrap = typeof document !== 'undefined' ? document.querySelector('.ticker-wrap') : null;
-const consoleContent = typeof document !== 'undefined' ? document.querySelector('.console-content') : null;
 const screenConsoleContent = typeof document !== 'undefined' ? document.getElementById('screen-console-content') : null;
-const consoleFooter = typeof document !== 'undefined' ? document.querySelector('.console-footer') : null;
-const btnRed = typeof document !== 'undefined' ? document.querySelector('.btn-red') : null;
 const screenTerminal = typeof document !== 'undefined' ? document.querySelector('.screen-terminal') : null;
+const bmoScreen = typeof document !== 'undefined' ? document.querySelector('.bmo-screen') : null;
 const bmoBody = typeof document !== 'undefined' ? document.querySelector('.bmo-body') : null;
 
 let resetTimeout = null;
@@ -136,11 +134,7 @@ function playSweep(time, startFreq, endFreq, duration, type = 'sine') {
 // Reset to default idle standby state
 function resetToIdle() {
   if (container) {
-    const isDrawerOpen = container.classList.contains('drawer-open');
     container.className = 'state-idle';
-    if (isDrawerOpen) {
-      container.classList.add('drawer-open');
-    }
   }
   // if (statusLabel) statusLabel.textContent = 'STANDBY';
 }
@@ -160,13 +154,14 @@ function handleHitchEvent(envelope) {
 
   // Extract and update metadata UI elements
   const metadata = extractMetadata(envelope);
+  setHarness(envelope.harness);
   if (hudHeader) {
     hudHeader.textContent = metadata.hudText;
   }
   if (tickerWrap) {
     tickerWrap.textContent = metadata.tickerText;
   }
-  if (consoleContent || screenConsoleContent) {
+  if (screenConsoleContent) {
     const formattedLines = metadata.consoleText.split('\n').map(line => {
       const colonIndex = line.indexOf(':');
       if (colonIndex !== -1) {
@@ -184,29 +179,15 @@ function handleHitchEvent(envelope) {
     if (consoleBuffer.length > appBufferSize) {
       consoleBuffer = consoleBuffer.slice(-appBufferSize);
     }
-    const formattedHtml = consoleBuffer.join('<br>');
 
-    if (consoleContent) {
-      consoleContent.innerHTML = formattedHtml;
-      consoleContent.scrollTop = consoleContent.scrollHeight;
-    }
-    if (screenConsoleContent) {
-      screenConsoleContent.innerHTML = formattedHtml;
-      if (screenTerminal) screenTerminal.scrollTop = screenTerminal.scrollHeight;
-    }
-  }
-  if (consoleFooter) {
-    consoleFooter.textContent = `Status: ${metadata.event}`;
+    screenConsoleContent.innerHTML = consoleBuffer.join('<br>');
+    if (screenTerminal) screenTerminal.scrollTop = screenTerminal.scrollHeight;
   }
 
   // Update expression classes and status label
   if (config) {
-    const isDrawerOpen = container ? container.classList.contains('drawer-open') : false;
     if (container) {
       container.className = `${config.state} ${config.className}`;
-      if (isDrawerOpen) {
-        container.classList.add('drawer-open');
-      }
     }
     if (statusLabel) {
       statusLabel.textContent = expr.replace('.', ' / ').toUpperCase();
@@ -220,12 +201,8 @@ function handleHitchEvent(envelope) {
     }
   } else {
     // If unknown expression received, show it as generic raw state
-    const isDrawerOpen = container ? container.classList.contains('drawer-open') : false;
     if (container) {
       container.className = 'state-idle';
-      if (isDrawerOpen) {
-        container.classList.add('drawer-open');
-      }
     }
     if (statusLabel) {
       statusLabel.textContent = expr.toUpperCase().substring(0, 16);
@@ -235,31 +212,82 @@ function handleHitchEvent(envelope) {
 
 let appColors = {};
 let currentSessionId = null;
+let currentHarness = null;
 
 function applyHostConfig(config) {
   if (!config) return;
-  if (config.ticker_speed_s !== undefined) {
-    document.documentElement.style.setProperty('--ticker-speed', `${config.ticker_speed_s}s`);
+  const parsedConfig = typeof config === 'string' ? JSON.parse(config) : config;
+  if (parsedConfig.ticker_speed_s !== undefined) {
+    document.documentElement.style.setProperty('--ticker-speed', `${parsedConfig.ticker_speed_s}s`);
   }
-  if (config.buffer_size !== undefined) {
-    appBufferSize = config.buffer_size;
+  if (parsedConfig.buffer_size !== undefined) {
+    appBufferSize = parsedConfig.buffer_size;
   }
-  if (config.colors) {
-    appColors = config.colors;
+  if (parsedConfig.colors) {
+    appColors = Object.fromEntries(
+      Object.entries(parsedConfig.colors).map(([key, value]) => [normalizeHarnessKey(key), value])
+    );
+    applyHarnessColor(currentHarness);
   }
+}
+
+function normalizeHarnessKey(value) {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+function defaultHarnessColor() {
+  return appColors.default || appColors.pi || appColors.omp || Object.values(appColors)[0] || null;
+}
+
+
+function colorForHarness(harness) {
+  const normalizedHarness = normalizeHarnessKey(harness);
+  if (!normalizedHarness) return defaultHarnessColor();
+  if (appColors[normalizedHarness]) return appColors[normalizedHarness];
+
+  const harnessTokens = String(harness)
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  for (const [key, color] of Object.entries(appColors)) {
+    if (harnessTokens.includes(key) || normalizedHarness.includes(key)) return color;
+  }
+  return defaultHarnessColor();
+}
+
+function applyHarnessColor(harness) {
+  const color = colorForHarness(harness);
+  if (!color) return false;
+  const targets = [
+    typeof document !== 'undefined' ? document.documentElement : null,
+    typeof document !== 'undefined' ? document.body : null,
+    container,
+    bmoBody
+  ].filter(Boolean);
+  for (const target of targets) {
+    target.style.setProperty('--bmo-casing', color);
+    target.style.setProperty('--bmo-casing-dark', color);
+    target.style.setProperty('--bmo-casing-light', color);
+  }
+  if (container) container.dataset.harness = normalizeHarnessKey(harness);
+  if (bmoBody) {
+    bmoBody.dataset.harness = normalizeHarnessKey(harness);
+    bmoBody.style.setProperty('background-image', 'none', 'important');
+    bmoBody.style.setProperty('background-color', color, 'important');
+    bmoBody.style.setProperty('box-shadow', `inset 0 4px 0 ${color}`, 'important');
+  }
+  return true;
+}
+
+function setHarness(harness) {
+  currentHarness = harness;
+  applyHarnessColor(harness);
 }
 
 function initHostSession({ sessionId, harness }) {
   currentSessionId = sessionId;
+  setHarness(harness);
   if (sessionValue) {
     sessionValue.textContent = sessionId;
-  }
-
-  if (harness && appColors[harness]) {
-    const color = appColors[harness];
-    document.documentElement.style.setProperty('--bmo-casing', color);
-    document.documentElement.style.setProperty('--bmo-casing-dark', color);
-    document.documentElement.style.setProperty('--bmo-casing-light', color);
   }
 }
 
@@ -288,7 +316,7 @@ if (zeroNativeBridge) {
 }
 
 function isInteractiveDragTarget(target) {
-  return target instanceof Element && target.closest('.btn-red, #btn-power, #btn-sound, .console-drawer');
+  return target instanceof Element && target.closest('.bmo-screen, #btn-power, #btn-sound');
 }
 
 function bindWindowDrag() {
@@ -351,27 +379,13 @@ function bindWindowDrag() {
 
 bindWindowDrag();
 
-// Bind red button click to toggle console drawer
-async function setDrawerOpen(open) {
-  if (!container) return;
-  container.classList.toggle('drawer-open', open);
-  if (document.body) {
-    document.body.classList.toggle('drawer-open', open);
-  }
-  if (zeroNativeBridge) {
-    try {
-      await zeroNativeBridge.invoke('hitch.setDrawerOpen', { open });
-    } catch (err) {
-      console.warn('Failed to resize Hitch Face window for drawer state:', err);
-    }
-  }
-}
-
-if (btnRed) {
-  btnRed.addEventListener('click', () => {
-    setDrawerOpen(!container?.classList.contains('drawer-open'));
+if (bmoScreen) {
+  bmoScreen.addEventListener('click', (event) => {
+    bmoScreen.classList.toggle('log-focused');
+    event.stopPropagation();
   });
 }
+
 
 const btnPower = typeof document !== 'undefined' ? document.getElementById('btn-power') : null;
 

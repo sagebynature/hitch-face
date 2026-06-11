@@ -102,14 +102,6 @@ void hitch_face_configure_macos_window(void *platform_context, unsigned long lon
 }
 
 
-void hitch_face_resize_macos_window(void *platform_context, unsigned long long window_id, double width, double height) {
-    id host = hitch_face_host_for_context(platform_context);
-    NSWindow *window = hitch_face_window_for_id(host, window_id);
-    if (!window) return;
-
-    hitch_face_set_content_size(window, width, height);
-    hitch_face_refresh_window_transparency(window);
-}
 
 void hitch_face_hide_macos_window(void *platform_context, unsigned long long window_id) {
     id host = hitch_face_host_for_context(platform_context);

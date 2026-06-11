@@ -6,8 +6,6 @@ pub const panic = std.debug.FullPanic(zero_native.debug.capturePanic);
 
 const closed_window_width: f64 = 310;
 const closed_window_height: f64 = 370;
-const open_window_width: f64 = 510;
-const open_window_height: f64 = 370;
 const max_sessions = 8;
 const max_events_per_session = 32;
 const max_event_bytes = 8192;
@@ -16,7 +14,6 @@ const default_session_id = "default-session";
 const default_harness = "default";
 
 extern fn hitch_face_configure_macos_window(platform_context: ?*anyopaque, window_id: u64, width: f64, height: f64) void;
-extern fn hitch_face_resize_macos_window(platform_context: ?*anyopaque, window_id: u64, width: f64, height: f64) void;
 extern fn hitch_face_close_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
 extern fn hitch_face_hide_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
 extern fn hitch_face_show_macos_window(platform_context: ?*anyopaque, window_id: u64) void;
@@ -98,7 +95,6 @@ const Session = struct {
     ready: bool = false,
     events: [max_events_per_session]QueuedEvent = undefined,
     event_count: usize = 0,
-    drawer_open: bool = false,
     moving: bool = false,
     original_valid: bool = false,
     restore_pending: bool = false,
@@ -111,8 +107,7 @@ const Session = struct {
         self.* = .{ .active = true, .window_id = window_id, .window_created = window_id == 1 };
         self.id_len = @min(id.len, self.id.len);
         @memcpy(self.id[0..self.id_len], id[0..self.id_len]);
-        self.harness_len = @min(harness.len, self.harness.len);
-        @memcpy(self.harness[0..self.harness_len], harness[0..self.harness_len]);
+        self.setHarness(harness);
     }
 
     fn idSlice(self: *const Session) []const u8 {
@@ -121,6 +116,11 @@ const Session = struct {
 
     fn harnessSlice(self: *const Session) []const u8 {
         return self.harness[0..self.harness_len];
+    }
+
+    fn setHarness(self: *Session, harness: []const u8) void {
+        self.harness_len = @min(harness.len, self.harness.len);
+        @memcpy(self.harness[0..self.harness_len], harness[0..self.harness_len]);
     }
 
     fn enqueue(self: *Session, envelope: []const u8) void {
@@ -145,8 +145,8 @@ const App = struct {
     sessions: [max_sessions]Session = undefined,
     session_count: usize = 0,
     next_window_id: zero_native.WindowId = 1,
-    handlers: [7]zero_native.BridgeHandler = undefined,
-    policies: [7]zero_native.BridgeCommandPolicy = undefined,
+    handlers: [6]zero_native.BridgeHandler = undefined,
+    policies: [6]zero_native.BridgeCommandPolicy = undefined,
 
     fn init(env_map: *std.process.Environ.Map, io: std.Io) App {
         var state = App{ .env_map = env_map, .io = io };
@@ -173,7 +173,6 @@ const App = struct {
             .{ .name = "hitch.nextEvents", .context = self, .invoke_fn = nextEvents },
             .{ .name = "hitch.closeSession", .context = self, .invoke_fn = closeSession },
             .{ .name = "hitch.setExpression", .context = self, .invoke_fn = setExpression },
-            .{ .name = "hitch.setDrawerOpen", .context = self, .invoke_fn = setDrawerOpen },
             .{ .name = "hitch.dragWindow", .context = self, .invoke_fn = dragWindow },
         };
         self.policies = .{
@@ -182,7 +181,6 @@ const App = struct {
             .{ .name = "hitch.nextEvents", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.closeSession", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.setExpression", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
-            .{ .name = "hitch.setDrawerOpen", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
             .{ .name = "hitch.dragWindow", .origins = &.{ "zero://app", "http://127.0.0.1:5173" } },
         };
         return .{ .policy = .{ .enabled = true, .commands = &self.policies }, .registry = .{ .handlers = &self.handlers } };
@@ -200,6 +198,7 @@ const App = struct {
         hideNativeWindow(runtime, 1);
         const thread = try std.Thread.spawn(.{}, serve, .{self});
         thread.detach();
+        logConfig(self.config);
         std.debug.print("Hitch Face zero-native listening on http://127.0.0.1:{d}/event\n", .{self.config.port});
     }
     fn onEvent(context: *anyopaque, runtime: *zero_native.Runtime, event: zero_native.Event) anyerror!void {
@@ -219,7 +218,10 @@ const App = struct {
     }
 
     fn ensureSession(self: *@This(), session_id: []const u8, harness: []const u8) !*Session {
-        if (self.findSessionById(session_id)) |session| return session;
+        if (self.findSessionById(session_id)) |session| {
+            session.setHarness(harness);
+            return session;
+        }
         if (self.session_count >= self.sessions.len) return error.SessionLimitReached;
 
         const index = self.session_count;
@@ -318,11 +320,12 @@ const App = struct {
                 session.restore_pending = true;
             }
         }
-        return .{ .expr = expr, .session_id = session.idSlice() };
+        std.debug.print("Hitch Face event: kind={s} session={s} harness={s} event={s}\n", .{ @tagName(kind), session.idSlice(), session.harnessSlice(), expr });
+        return .{ .expr = expr, .session_id = session.idSlice(), .harness = session.harnessSlice() };
     }
 
     fn getConfig(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
-        _ = invocation;
+        logBridgePayload("hitch.getConfig", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
@@ -330,19 +333,23 @@ const App = struct {
     }
 
     fn getSession(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        logBridgePayload("hitch.getSession", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
         const session = self.findSessionByWindow(invocation.source.window_id) orelse try self.ensureSession(default_session_id, default_harness);
+        std.debug.print("Hitch Face bridge getSession: source_window={d} session={s} harness={s}\n", .{ invocation.source.window_id, session.idSlice(), session.harnessSlice() });
         session.ready = true;
         return std.fmt.bufPrint(output, "{{\"sessionId\":\"{s}\",\"harness\":\"{s}\"}}", .{ session.idSlice(), session.harnessSlice() });
     }
 
     fn nextEvents(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        logBridgePayload("hitch.nextEvents", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
         const session = self.findSessionByWindow(invocation.source.window_id) orelse return std.fmt.bufPrint(output, "{{\"events\":[]}}", .{});
+        if (session.event_count != 0) std.debug.print("Hitch Face bridge nextEvents: source_window={d} session={s} harness={s} count={d}\n", .{ invocation.source.window_id, session.idSlice(), session.harnessSlice(), session.event_count });
         session.ready = true;
         var writer = std.Io.Writer.fixed(output);
         try writer.writeAll("{\"events\":[");
@@ -356,6 +363,7 @@ const App = struct {
     }
 
     fn closeSession(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        logBridgePayload("hitch.closeSession", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         const window_id = invocation.source.window_id;
         if (self.runtime) |runtime| {
@@ -367,24 +375,21 @@ const App = struct {
         return std.fmt.bufPrint(output, "{{\"ok\":true}}", .{});
     }
 
+    fn logBridgePayload(command: []const u8, payload: []const u8) void {
+        if (std.mem.eql(u8, command, "hitch.nextEvents") and std.mem.eql(u8, payload, "null")) return;
+        std.debug.print("level=info kind=event name=\"hitch.bridge_payload\" command=\"{s}\" payload={s}\n", .{ command, payload });
+    }
+
     fn setExpression(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        logBridgePayload("hitch.setExpression", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         var envelope: [max_event_bytes]u8 = undefined;
         _ = self.handleEvent(.expression, invocation.request.payload, &envelope) catch {};
         return std.fmt.bufPrint(output, "{{\"ok\":true}}", .{});
     }
 
-    fn setDrawerOpen(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
-        const self: *@This() = @ptrCast(@alignCast(context));
-        const open = std.mem.indexOf(u8, invocation.request.payload, "\"open\":true") != null;
-        const window_id = invocation.source.window_id;
-        if (self.runtime) |runtime| resizeNativeWindow(runtime, window_id, if (open) open_window_width else closed_window_width, if (open) open_window_height else closed_window_height);
-        self.mutex.lockUncancelable(self.io);
-        if (self.findSessionByWindow(window_id)) |session| session.drawer_open = open;
-        self.mutex.unlock(self.io);
-        return std.fmt.bufPrint(output, "{{\"ok\":true,\"open\":{s}}}", .{if (open) "true" else "false"});
-    }
     fn dragWindow(context: *anyopaque, invocation: zero_native.bridge.Invocation, output: []u8) anyerror![]const u8 {
+        logBridgePayload("hitch.dragWindow", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         const dx = extractJsonNumber(invocation.request.payload, "dx") orelse 0;
         const dy = extractJsonNumber(invocation.request.payload, "dy") orelse 0;
@@ -403,6 +408,7 @@ const App = struct {
 const EventResult = struct {
     expr: []const u8,
     session_id: []const u8,
+    harness: []const u8,
 };
 
 const dev_origins = [_][]const u8{ "zero://app", "zero://inline", "http://127.0.0.1:5173" };
@@ -432,26 +438,24 @@ fn serve(app: *App) !void {
 
 fn readHttpRequest(reader: *std.Io.Reader) ![]const u8 {
     while (true) {
+        const buffered = reader.buffer[reader.seek..reader.end];
+        if (std.mem.indexOf(u8, buffered, "\r\n\r\n")) |header_end| {
+            const body_start = header_end + 4;
+            const content_length = parseContentLength(buffered[0..header_end]);
+            const total_len = body_start + content_length;
+            if (total_len > reader.buffer.len - reader.seek) return error.RequestTooLarge;
+            if (buffered.len >= total_len) return buffered[0..total_len];
+        }
+
+        if (reader.end == reader.buffer.len) return error.RequestTooLarge;
         reader.fillMore() catch |err| switch (err) {
-            error.EndOfStream => break,
+            error.EndOfStream => {
+                if (buffered.len == 0) return error.EndOfStream;
+                return buffered;
+            },
             else => return err,
         };
-        const buffered = reader.buffer[reader.seek..reader.end];
-        const header_end = std.mem.indexOf(u8, buffered, "\r\n\r\n") orelse continue;
-        const body_start = header_end + 4;
-        const content_length = parseContentLength(buffered[0..header_end]);
-        const total_len = body_start + content_length;
-        while (buffered.len < total_len) {
-            reader.fillMore() catch |err| switch (err) {
-                error.EndOfStream => return error.EndOfStream,
-                else => return err,
-            };
-            const updated = reader.buffer[reader.seek..reader.end];
-            if (updated.len >= total_len) return updated[0..total_len];
-        }
-        return buffered[0..total_len];
     }
-    return reader.buffer[reader.seek..reader.end];
 }
 
 fn parseContentLength(headers: []const u8) usize {
@@ -466,12 +470,28 @@ fn parseContentLength(headers: []const u8) usize {
     return 0;
 }
 
+fn requestKindPath(kind: RequestKind) []const u8 {
+    return switch (kind) {
+        .event => "/event",
+        .expression => "/expression",
+    };
+}
+
+fn logHttpPayload(kind: RequestKind, body: []const u8) void {
+    std.debug.print("level=info kind=event name=\"hitch.http_payload\" route=\"{s}\" payload={s}\n", .{ requestKindPath(kind), body });
+}
 fn handleConnection(app: *App, stream: std.Io.net.Stream) !void {
     defer stream.close(app.io);
 
     var read_storage: [max_event_bytes]u8 = undefined;
     var reader = stream.reader(app.io, &read_storage);
-    const request = try readHttpRequest(&reader.interface);
+    const request = readHttpRequest(&reader.interface) catch |err| {
+        if (err == error.RequestTooLarge) {
+            try sendResponse(app, stream, 413, "Payload Too Large", "application/json", "{\"status\":\"error\",\"reason\":\"Request too large\"}");
+            return;
+        }
+        return err;
+    };
 
     if (std.mem.startsWith(u8, request, "OPTIONS ")) {
         try sendResponse(app, stream, 204, "No Content", "application/json", "");
@@ -488,6 +508,7 @@ fn handleConnection(app: *App, stream: std.Io.net.Stream) !void {
     };
 
     const body = if (std.mem.indexOf(u8, request, "\r\n\r\n")) |idx| request[idx + 4 ..] else "";
+    logHttpPayload(kind, body);
     if (!isLikelyJson(body)) {
         try sendResponse(app, stream, 400, "Bad Request", "application/json", "{\"status\":\"error\",\"reason\":\"Invalid JSON\"}");
         return;
@@ -507,8 +528,8 @@ fn handleConnection(app: *App, stream: std.Io.net.Stream) !void {
         return;
     };
 
-    var response_buf: [192]u8 = undefined;
-    const response = try std.fmt.bufPrint(&response_buf, "{{\"status\":\"ok\",\"event\":\"{s}\"}}", .{result.expr});
+    var response_buf: [256]u8 = undefined;
+    const response = try std.fmt.bufPrint(&response_buf, "{{\"status\":\"ok\",\"event\":\"{s}\",\"session_id\":\"{s}\",\"harness\":\"{s}\"}}", .{ result.expr, result.session_id, result.harness });
     try sendResponse(app, stream, 200, "OK", "application/json", response);
 }
 
@@ -536,11 +557,6 @@ fn configureNativeWindow(runtime: *zero_native.Runtime, window_id: u64, width: f
     }
 }
 
-fn resizeNativeWindow(runtime: *zero_native.Runtime, window_id: u64, width: f64, height: f64) void {
-    if (comptime @import("builtin").target.os.tag == .macos) {
-        hitch_face_resize_macos_window(runtime.options.platform.services.context, window_id, width, height);
-    }
-}
 
 fn hideNativeWindow(runtime: *zero_native.Runtime, window_id: u64) void {
     if (comptime @import("builtin").target.os.tag == .macos) {
@@ -629,7 +645,27 @@ fn parseConfig(content: []const u8, config: *Config) void {
 }
 
 fn trimTomlValue(raw: []const u8) []const u8 {
-    var value = std.mem.trim(u8, raw, &std.ascii.whitespace);
+    var in_string = false;
+    var escaped = false;
+    var end = raw.len;
+    for (raw, 0..) |ch, i| {
+        if (in_string) {
+            if (escaped) {
+                escaped = false;
+            } else if (ch == '\\') {
+                escaped = true;
+            } else if (ch == '"') {
+                in_string = false;
+            }
+        } else if (ch == '"') {
+            in_string = true;
+        } else if (ch == '#') {
+            end = i;
+            break;
+        }
+    }
+
+    var value = std.mem.trim(u8, raw[0..end], &std.ascii.whitespace);
     if (value.len >= 2 and value[0] == '"' and value[value.len - 1] == '"') value = value[1 .. value.len - 1];
     return value;
 }
@@ -642,8 +678,17 @@ fn writeConfigJson(config: Config, output: []u8) ![]const u8 {
         try writer.print("\"{s}\":\"{s}\"", .{ color.key[0..color.key_len], color.value[0..color.value_len] });
     }
     try writer.writeAll("}}");
-    try writer.writeAll("}");
     return writer.buffered();
+}
+
+fn logConfig(config: Config) void {
+    std.debug.print(
+        "Hitch Face config: movement_enabled={} speed={d} interval_ms={d} port={d} ticker_speed_s={d} buffer_size={d} colors={d}\n",
+        .{ config.movement_enabled, config.speed, config.interval_ms, config.port, config.ticker_speed_s, config.buffer_size, config.color_count },
+    );
+    for (config.colors[0..config.color_count]) |color| {
+        std.debug.print("Hitch Face config color: {s}={s}\n", .{ color.key[0..color.key_len], color.value[0..color.value_len] });
+    }
 }
 
 fn isLikelyJson(bytes: []const u8) bool {
@@ -762,6 +807,18 @@ fn containsEvent(comptime events: []const []const u8, expr: []const u8) bool {
     return false;
 }
 
+test "reads buffered HTTP request with content length" {
+    var reader: std.Io.Reader = .fixed("POST /event HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}trailing");
+    const request = try readHttpRequest(&reader);
+    try std.testing.expectEqualStrings("POST /event HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}", request);
+}
+
+test "rejects HTTP request larger than read buffer" {
+    var storage = "POST /event HTTP/1.1\r\nContent-Length: 9000\r\n\r\n{}".*;
+    var reader: std.Io.Reader = .fixed(&storage);
+    try std.testing.expectError(error.RequestTooLarge, readHttpRequest(&reader));
+}
+
 test "extracts expression payload" {
     try std.testing.expectEqualStrings("turn.completed", extractJsonString("{\"expression\":\"turn.completed\"}", "expression").?);
 }
@@ -788,6 +845,32 @@ test "parses config values and colors" {
     try std.testing.expect(config.movement_enabled);
     try std.testing.expectEqual(@as(usize, 1), config.color_count);
     try std.testing.expectEqualStrings("turn", config.colors[0].key[0..config.colors[0].key_len]);
+}
+test "writes config JSON with default color" {
+    var config: Config = .{};
+    parseConfig(
+        \\ticker_speed_s = 1
+        \\buffer_size = 5
+        \\[colors]
+        \\default = "#e4c160"
+    , &config);
+    var output: [256]u8 = undefined;
+    const json = try writeConfigJson(config, &output);
+    try std.testing.expectEqualStrings("{\"ticker_speed_s\":1,\"buffer_size\":5,\"colors\":{\"default\":\"#e4c160\"}}", json);
+}
+
+
+test "parses config values with inline comments" {
+    var config: Config = .{};
+    parseConfig(
+        \\ticker_speed_s = 2 # lower is faster
+        \\[colors]
+        \\codex = "#4047FF" # blue casing
+    , &config);
+    try std.testing.expectEqual(@as(f64, 2), config.ticker_speed_s);
+    try std.testing.expectEqual(@as(usize, 1), config.color_count);
+    try std.testing.expectEqualStrings("codex", config.colors[0].key[0..config.colors[0].key_len]);
+    try std.testing.expectEqualStrings("#4047FF", config.colors[0].value[0..config.colors[0].value_len]);
 }
 
 test "session id fallback extracts nested payload session" {
@@ -818,6 +901,13 @@ test "session starts hidden until an event is received" {
     try std.testing.expect(!session.event_received);
     session.event_received = true;
     try std.testing.expect(session.event_received);
+}
+
+test "session harness updates when default session receives event" {
+    var session: Session = undefined;
+    session.init(default_session_id, default_harness, 1);
+    session.setHarness("codex");
+    try std.testing.expectEqualStrings("codex", session.harnessSlice());
 }
 
 test "session queue drops oldest when full" {
