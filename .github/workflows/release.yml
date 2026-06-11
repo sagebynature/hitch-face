@@ -23,10 +23,10 @@ jobs:
             package-command: npm run dist:mac
             artifact-name: hitch-face-macos
             artifact-path: app/zig-out/package/**/*.app
-          - os: windows-latest
-            package-command: npm run dist:win
-            artifact-name: hitch-face-windows
-            artifact-path: app/zig-out/package/**/*
+          # - os: windows-latest
+          #   package-command: npm run dist:win
+          #   artifact-name: hitch-face-windows
+          #   artifact-path: app/zig-out/package/**/*
           - os: ubuntu-latest
             package-command: npm run dist:linux
             artifact-name: hitch-face-linux
