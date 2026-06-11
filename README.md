@@ -26,24 +26,58 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 - `tests/extract-metadata.test.js`: Unit test for metadata extraction.
 - `tests/adapter.test.js`: Integration test for adapter forwarding/fail-open behavior.
 
+- `scripts/install-extension.js`: Shared installer helper for Hitch detection, extension install, and config seeding.
+- `electron-builder.yml`: macOS/Windows installer configuration.
+- `Makefile`: Source build, test, install, and packaging targets.
+
 ## Requirements
 
-- Linux/macOS desktop environment (X11/Wayland or macOS windowing).
+- macOS or Windows for packaged installers. Source runs also work on Linux desktop environments supported by Electron.
+- [Hitch](https://github.com/sagebynature/hitch) for event integration.
 - Node.js 22.12+ and npm.
-- `bash` and `curl` are only needed for the optional install script and `test-drive.sh`; the installed Hitch adapter runs with `node` and has no `bash`, `jq`, or `curl` dependency.
+  - Source builds use Node/npm to build and run the Electron app.
+  - Packaged installs still require `node` to be available where Hitch runs the extension because the Hitch extension manifest executes `command = ["node", "adapter.js"]`.
+- `bash` and `curl` are only needed for the source install script and `test-drive.sh`.
+
+Install Hitch first if it is not already installed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch/main/scripts/install.sh | sh
+```
 
 ## Install
 
-### Option A — Run from source
+### Option A — Release installer
+
+Download the macOS or Windows artifact from the GitHub release matching the semantic version you want.
+
+- macOS: install `Hitch-Face-<version>-mac-<arch>.pkg`, then launch `Hitch Face` from Finder or run `hitch-face` if the CLI launcher was installed.
+- Windows: run `Hitch-Face-<version>-win-x64.exe`, then launch from the Start Menu or use the installed `hitch-face.cmd` launcher.
+
+During install, Hitch Face checks for Hitch and installs the extension into Hitch when Hitch is present. If Hitch is missing, the app install can still complete, but event integration will not work until Hitch is installed and the extension helper is rerun.
+
+### Option B — Build/run from source
 
 ```bash
 git clone https://github.com/sagebynature/hitch-face.git
 cd hitch-face
-npm install
-npm start
+make deps
+make test
+make start
 ```
 
-### Option B — Install script
+Useful Makefile targets:
+
+```bash
+make build              # Build the Hitch adapter
+make test               # Run unit/integration tests
+make install-extension  # Install only the Hitch extension/config
+make install-local      # Source install app + extension + CLI launcher
+make package-mac        # Build macOS installer on macOS
+make package-win        # Build Windows installer on Windows/CI
+```
+
+### Option C — Source install script
 
 ```bash
 chmod +x install.sh
@@ -116,7 +150,7 @@ When using `/expression`, no `session_id` is required and session is created as 
 
 ## Verify Hitch wiring
 
-`install.sh` writes a Hitch extension manifest to:
+Installer packages and `install.sh` write a Hitch extension manifest to:
 
 ```text
 ~/.config/hitch/extensions/hitch-face/config.toml
@@ -164,3 +198,5 @@ That will POST all supported expressions in sequence to `http://127.0.0.1:8888/e
 - If no widget appears, confirm no other process is occupying the configured `port`.
 - If Hitch runs in Docker or remotely, set `HITCH_FACE_URL` in the Hitch extension manifest to the widget's reachable `/event` URL.
 - Ensure `node` is available where Hitch runs the adapter.
+- If the installer reports that Hitch is missing, install Hitch with `curl -fsSL https://raw.githubusercontent.com/sagebynature/hitch/main/scripts/install.sh | sh`, then run `make install-extension` from source or rerun the installed helper.
+- If the installer reports that Node is missing, install Node.js 22.12+; Hitch needs `node` on `PATH` to execute the adapter.

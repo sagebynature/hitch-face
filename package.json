@@ -1,18 +1,24 @@
 {
   "name": "hitch-face",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Desktop widget displaying animated robot face expressions matching Hitch events",
   "main": "main.js",
+  "productName": "Hitch Face",
   "scripts": {
     "start": "electron .",
+    "build": "npm run build:adapter",
     "build:adapter": "tsc -p tsconfig.adapter.json",
-    "test": "npm run build:adapter && node tests/extract-metadata.test.js && node tests/adapter.test.js"
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "install:extension": "npm run build:adapter && node scripts/install-extension.js",
+    "test": "npm run build:adapter && node tests/extract-metadata.test.js && node tests/adapter.test.js && node tests/install-extension.test.js"
   },
-  "dependencies": {
-    "electron": "^42.3.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^24.13.1",
+    "electron": "^42.3.3",
+    "electron-builder": "^26.15.2",
     "typescript": "^5.9.3"
   },
   "engines": {

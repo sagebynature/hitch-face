@@ -6,9 +6,7 @@ set -e
 echo "=== Hitch-Face Desktop Widget Installer ==="
 
 # Define directories
-EXTENSION_DIR="$HOME/.config/hitch/extensions/hitch-face"
 APP_DIR="$HOME/.local/share/hitch-face"
-CONFIG_DIR="$HOME/.config/hitch-face"
 BIN_DIR="$HOME/.local/bin"
 
 # Ensure local build tooling is available, then compile the dependency-free
@@ -21,19 +19,14 @@ fi
 echo "Building Hitch adapter..."
 npm run build:adapter
 
-# Install only the adapter and Hitch manifest into the extension directory.
-echo "Installing Hitch extension adapter to $EXTENSION_DIR..."
-rm -rf "$EXTENSION_DIR"
-mkdir -p "$EXTENSION_DIR"
-cp dist/adapter.js "$EXTENSION_DIR/adapter.js"
-cp hitch-extension.toml "$EXTENSION_DIR/config.toml"
-
+echo "Installing Hitch extension adapter..."
+node scripts/install-extension.js
 # Install the Electron desktop app separately from the Hitch extension.
 echo "Installing desktop app to $APP_DIR..."
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR"
 cp package.json package-lock.json "$APP_DIR/"
-cp main.js index.html style.css renderer.js "$APP_DIR/"
+cp main.js index.html style.css renderer.js config.toml hitch-extension.toml "$APP_DIR/"
 
 echo "Installing desktop app runtime dependencies in $APP_DIR..."
 (
@@ -41,14 +34,7 @@ echo "Installing desktop app runtime dependencies in $APP_DIR..."
   npm install --omit=dev
 )
 
-# Copy default config.toml if it doesn't exist
-mkdir -p "$CONFIG_DIR"
-if [ ! -f "$CONFIG_DIR/config.toml" ]; then
-  echo "Creating default configuration in $CONFIG_DIR/config.toml..."
-  cp config.toml "$CONFIG_DIR/config.toml"
-else
-  echo "Configuration file already exists at $CONFIG_DIR/config.toml. Skipping override."
-fi
+
 
 # Create launcher script
 mkdir -p "$BIN_DIR"
@@ -69,6 +55,6 @@ chmod +x "$LAUNCHER"
 echo "=== Installation complete ==="
 echo "Launcher: $LAUNCHER"
 echo "Desktop app: $APP_DIR"
-echo "Extension adapter: $EXTENSION_DIR"
-echo "Config: $CONFIG_DIR/config.toml"
+echo "Extension adapter: $HOME/.config/hitch/extensions/hitch-face"
+echo "Config: $HOME/.config/hitch-face/config.toml"
 echo "To run the widget, type: hitch-face"

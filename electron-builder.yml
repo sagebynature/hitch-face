@@ -1,0 +1,51 @@
+appId: com.sagebynature.hitchface
+productName: Hitch Face
+artifactName: Hitch-Face-${version}-${os}-${arch}.${ext}
+directories:
+  output: release
+  buildResources: installer-resources
+files:
+  - main.js
+  - renderer.js
+  - index.html
+  - style.css
+  - config.toml
+  - package.json
+  - dist/adapter.js
+  - hitch-extension.toml
+  - scripts/install-extension.js
+extraResources:
+  - from: dist/adapter.js
+    to: hitch-face/adapter.js
+  - from: hitch-extension.toml
+    to: hitch-face/config.toml
+  - from: config.toml
+    to: hitch-face/default-config.toml
+  - from: scripts/install-extension.js
+    to: hitch-face/install-extension.js
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: pkg
+      arch:
+        - universal
+pkg:
+  scripts: installer-resources/pkg-scripts
+  installLocation: /Applications
+  allowAnywhere: false
+  allowCurrentUserHome: false
+  allowRootDirectory: true
+  isRelocatable: false
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Hitch Face
+  include: installer-resources/installer.nsh
