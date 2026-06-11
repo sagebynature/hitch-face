@@ -1,0 +1,9 @@
+name = "hitch_face"
+type = "shell"
+command = ["node", "adapter.js"]
+kind = "observer"
+hitch_events = ["*"]
+payload = "hitch"
+timeout_ms = 1000
+on_error = "fail_open"
+on_timeout = "fail_open"

@@ -5,9 +5,17 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node tests/extract-metadata.test.js"
+    "build:adapter": "tsc -p tsconfig.adapter.json",
+    "test": "npm run build:adapter && node tests/extract-metadata.test.js && node tests/adapter.test.js"
   },
   "dependencies": {
     "electron": "^42.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

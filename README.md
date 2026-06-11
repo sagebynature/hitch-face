@@ -18,17 +18,19 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 - `index.html`: Widget markup.
 - `style.css`: Styling and per-expression themes.
 - `renderer.js`: IPC event rendering, sound effects, metadata display.
-- `adapter.sh`: Hitch shell handler that posts events to the local endpoint.
+- `src/adapter.ts`: Dependency-free Hitch adapter source that forwards events to the local endpoint.
 - `config.toml`: Runtime configuration options.
+- `hitch-extension.toml`: Hitch extension manifest installed as `~/.config/hitch/extensions/hitch-face/config.toml`.
 - `install.sh`: Optional install/launcher helper.
 - `test-drive.sh`: Sends sample events for manual verification.
 - `tests/extract-metadata.test.js`: Unit test for metadata extraction.
+- `tests/adapter.test.js`: Integration test for adapter forwarding/fail-open behavior.
 
 ## Requirements
 
 - Linux/macOS desktop environment (X11/Wayland or macOS windowing).
-- Node.js and npm.
-- `bash`, `jq`, and `curl` available in `PATH`.
+- Node.js 22.12+ and npm.
+- `bash` and `curl` are only needed for the optional install script and `test-drive.sh`; the installed Hitch adapter runs with `node` and has no `bash`, `jq`, or `curl` dependency.
 
 ## Install
 
@@ -48,9 +50,10 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This copies the extension to:
+This installs:
 
-- `~/.config/hitch/extensions/hitch-face` (app files)
+- `~/.config/hitch/extensions/hitch-face` (adapter-only Hitch extension)
+- `~/.local/share/hitch-face` (Electron desktop app)
 - `~/.local/bin/hitch-face` (launcher)
 
 And installs a default config file at:
@@ -65,7 +68,8 @@ hitch-face
 
 ## Runtime configuration
 
-Edit `~/.config/hitch-face/config.toml`.
+Edit `~/.config/hitch-face/config.toml` to configure the desktop widget process.
+This file is read by Electron when it starts; the Hitch adapter does not read it.
 
 ```toml
 movement_enabled = false
@@ -112,12 +116,18 @@ When using `/expression`, no `session_id` is required and session is created as 
 
 ## Verify Hitch wiring
 
-Edit (or create) `~/.config/hitch/config.toml` and add:
+`install.sh` writes a Hitch extension manifest to:
+
+```text
+~/.config/hitch/extensions/hitch-face/config.toml
+```
+
+Hitch scans that directory automatically. The manifest registers the Node adapter with the extension directory as its working directory:
 
 ```toml
-[handlers.hitch_face]
+name = "hitch_face"
 type = "shell"
-command = ["/bin/bash", "/ABSOLUTE/PATH/TO/hitch-face/adapter.sh"]
+command = ["node", "adapter.js"]
 hitch_events = ["*"]
 kind = "observer"
 timeout_ms = 1000
@@ -125,10 +135,19 @@ on_error = "fail_open"
 on_timeout = "fail_open"
 ```
 
-Notes:
+By default, `adapter.js` posts events to `http://127.0.0.1:8888/event`. Override
+the destination with `HITCH_FACE_URL` when Hitch runs somewhere other than the
+desktop host running the widget:
 
-- Replace `/ABSOLUTE/PATH/TO/hitch-face/adapter.sh` with the actual path where `adapter.sh` lives.
-- If you used `install.sh`, use `~/.config/hitch/extensions/hitch-face/adapter.sh`.
+```toml
+command = ["env", "HITCH_FACE_URL=http://host.docker.internal:8888/event", "node", "adapter.js"]
+```
+
+For remote hosts, prefer an SSH tunnel and keep the widget bound to localhost:
+
+```bash
+ssh -R 8888:127.0.0.1:8888 remote-host
+```
 
 ## Manual test
 
@@ -143,5 +162,5 @@ That will POST all supported expressions in sequence to `http://127.0.0.1:8888/e
 ## Directory and event troubleshooting
 
 - If no widget appears, confirm no other process is occupying the configured `port`.
-- If a custom port is used, set the same value in `~/.config/hitch-face/config.toml`.
-- Ensure `adapter.sh` can run and that `jq`/`curl` are installed.
+- If Hitch runs in Docker or remotely, set `HITCH_FACE_URL` in the Hitch extension manifest to the widget's reachable `/event` URL.
+- Ensure `node` is available where Hitch runs the adapter.
