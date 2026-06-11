@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+native/frontend/node_modules/
 
 # Build/package output
 dist/
@@ -46,6 +47,7 @@ tmp/
 temp/
 
 # Project-specific tooling
+.codex/
 .superpowers/
 .omx/
 .omo/
