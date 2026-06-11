@@ -15,20 +15,22 @@ Animated desktop BMO widget that mirrors Hitch events in real time.
 
 ## Project Files
 
-- `native/src/main.zig`: zero-native host, HTTP endpoint (`/event`, `/expression`), window/session orchestration.
-- `native/frontend/index.html`: Widget markup.
-- `native/frontend/style.css`: Styling and per-expression themes.
-- `native/frontend/renderer.js`: zero-native bridge event rendering, sound effects, metadata display.
-- `src/adapter.ts`: Dependency-free Hitch adapter source that forwards events to the local endpoint.
-- `config.toml`: Runtime configuration options.
-- `hitch-extension.toml`: Hitch extension manifest installed as `~/.config/hitch/extensions/hitch-face/config.toml`.
+The repository is split by runtime boundary:
+
+- `app/`: Hitch Face desktop application. It owns the zero-native host, local API server, session/window orchestration, and embedded BMO frontend.
+  - `app/src/main.zig`: zero-native host and `127.0.0.1:<port>` API server for `/event` and `/expression`.
+  - `app/frontend/index.html`: Widget markup.
+  - `app/frontend/style.css`: Styling and per-expression themes.
+  - `app/frontend/renderer.js`: zero-native bridge event rendering, sound effects, metadata display.
+  - `app/app.zon`: zero-native app manifest.
+- `extension/`: Hitch observer extension installed into the Hitch server config.
+  - `extension/src/adapter.ts`: Dependency-free observer adapter that forwards Hitch events to the app API server.
+  - `extension/hitch-extension.toml`: Hitch extension manifest installed as `~/.config/hitch/extensions/hitch-face/config.toml`.
+- `config.toml`: Runtime configuration read by the desktop app.
 - `install.sh`: Optional install/launcher helper.
 - `test-drive.sh`: Sends sample events for manual verification.
-- `tests/extract-metadata.test.js`: Unit test for metadata extraction.
-- `tests/adapter.test.js`: Integration test for adapter forwarding/fail-open behavior.
-
+- `tests/`: Unit/integration tests for app metadata, extension forwarding, and extension installation.
 - `scripts/install-extension.js`: Shared installer helper for Hitch detection, extension install, and config seeding.
-- `native/app.zon`: zero-native app manifest.
 - `Makefile`: Source build, test, install, and packaging targets.
 
 ## Requirements

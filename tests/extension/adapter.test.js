@@ -30,7 +30,7 @@ function close(server) {
 
 function runAdapter(input, endpoint) {
   const { promise, resolve, reject } = Promise.withResolvers();
-  const child = spawn(process.execPath, ['dist/adapter.js'], {
+  const child = spawn(process.execPath, ['extension/dist/adapter.js'], {
     env: { ...process.env, HITCH_FACE_URL: endpoint },
     stdio: ['pipe', 'ignore', 'pipe']
   });

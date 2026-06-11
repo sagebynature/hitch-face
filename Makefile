@@ -1,15 +1,15 @@
-.PHONY: deps build build-adapter build-native start test package package-mac package-win package-linux install-extension install-local clean
+.PHONY: deps build build-adapter build-app start test package package-mac package-win package-linux install-extension install-local clean
 
 deps:
 	npm ci
 
-build: build-adapter build-native
+build: build-adapter build-app
 
 build-adapter:
 	npm run build:adapter
 
-build-native:
-	npm run build:native
+build-app:
+	npm run build:app
 
 start:
 	npm start
@@ -35,4 +35,4 @@ install-local:
 	./install.sh
 
 clean:
-	rm -rf dist release out native/zig-out native/.zig-cache native/frontend/dist native/tmp-home
+	rm -rf release out app/zig-out app/.zig-cache app/frontend/dist app/tmp-home extension/dist

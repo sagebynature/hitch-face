@@ -1,6 +1,6 @@
-# Hitch Face native shell
+# Hitch Face app
 
-Zero-native host for Hitch Face. The root project owns scripts and packaging; this directory contains the Zig host, zero-native manifest, native window shim, and browser frontend assets.
+Desktop application runtime for Hitch Face. This directory owns the zero-native host, local API server, session/window orchestration, native window shim, and embedded BMO frontend.
 
 ## Commands
 

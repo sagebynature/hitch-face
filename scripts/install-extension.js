@@ -96,12 +96,14 @@ function resolveSources(options) {
   const roots = candidateRoots();
   const adapter = firstExisting([
     options.adapter,
+    ...roots.map(root => path.join(root, 'extension', 'dist', 'adapter.js')),
     ...roots.map(root => path.join(root, 'adapter.js')),
     ...roots.map(root => path.join(root, 'dist', 'adapter.js'))
   ]);
   const packagedResourceRoot = process.resourcesPath ? path.join(process.resourcesPath, 'hitch-face') : '';
   const manifest = firstExisting([
     options.manifest,
+    ...roots.map(root => path.join(root, 'extension', 'hitch-extension.toml')),
     packagedResourceRoot ? path.join(packagedResourceRoot, 'config.toml') : '',
     ...roots.map(root => path.join(root, 'hitch-extension.toml'))
   ]);

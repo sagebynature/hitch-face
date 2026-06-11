@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-native/frontend/node_modules/
+app/frontend/node_modules/
 
 # Build/package output
 dist/
@@ -14,10 +14,11 @@ release/
 *.rpm
 *.snap
 *.pkg
-native/zig-out/
-native/.zig-cache/
-native/frontend/dist/
-native/tmp-home/
+app/zig-out/
+app/.zig-cache/
+app/frontend/dist/
+app/tmp-home/
+extension/dist/
 
 # Logs
 logs/

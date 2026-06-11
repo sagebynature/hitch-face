@@ -4,13 +4,13 @@
     "lib": ["ES2024"],
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "rootDir": "src",
-    "outDir": "dist",
+    "rootDir": "extension/src",
+    "outDir": "extension/dist",
     "strict": true,
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmitOnError": true
   },
-  "include": ["src/adapter.ts"]
+  "include": ["extension/src/adapter.ts"]
 }

@@ -64,7 +64,7 @@ const testCases = [
 ];
 
 (async () => {
-  const { extractMetadata } = await import('../native/frontend/renderer.js');
+  const { extractMetadata } = await import('../../app/frontend/renderer.js');
 
   console.log('Running metadata extraction unit tests...');
   let failed = 0;

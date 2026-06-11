@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { HITCH_INSTALL_COMMAND, installExtension } = require('../scripts/install-extension');
+const { HITCH_INSTALL_COMMAND, installExtension } = require('../../scripts/install-extension');
 
 function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'hitch-face-install-'));
@@ -32,8 +32,8 @@ function withEnv(values, fn) {
 }
 
 function createSources(root) {
-  const adapter = path.join(root, 'dist', 'adapter.js');
-  const manifest = path.join(root, 'hitch-extension.toml');
+  const adapter = path.join(root, 'extension', 'dist', 'adapter.js');
+  const manifest = path.join(root, 'extension', 'hitch-extension.toml');
   const defaultConfig = path.join(root, 'config.toml');
   writeFile(adapter, 'console.log("adapter");\n');
   writeFile(manifest, 'name = "hitch_face"\ncommand = ["node", "adapter.js"]\n');

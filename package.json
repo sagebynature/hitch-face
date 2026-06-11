@@ -4,16 +4,16 @@
   "description": "Desktop widget displaying animated robot face expressions matching Hitch events",
   "productName": "Hitch Face",
   "scripts": {
-    "start": "cd native && zig build run",
-    "build": "npm run build:adapter && npm run build:native",
+    "start": "cd app && zig build run",
+    "build": "npm run build:adapter && npm run build:app",
     "build:adapter": "tsc -p tsconfig.adapter.json",
-    "build:native": "cd native && zig build frontend-build && zig build",
+    "build:app": "cd app && zig build frontend-build && zig build",
     "dist": "npm run dist:mac",
-    "dist:mac": "npm run build:adapter && cd native && zig build package -Dpackage-target=macos -Doptimize=ReleaseSmall",
-    "dist:win": "npm run build:adapter && cd native && zig build package -Dpackage-target=windows -Doptimize=ReleaseSmall",
-    "dist:linux": "npm run build:adapter && cd native && zig build package -Dpackage-target=linux -Doptimize=ReleaseSmall",
+    "dist:mac": "npm run build:adapter && cd app && zig build package -Dpackage-target=macos -Doptimize=ReleaseSmall",
+    "dist:win": "npm run build:adapter && cd app && zig build package -Dpackage-target=windows -Doptimize=ReleaseSmall",
+    "dist:linux": "npm run build:adapter && cd app && zig build package -Dpackage-target=linux -Doptimize=ReleaseSmall",
     "install:extension": "npm run build:adapter && node scripts/install-extension.js",
-    "test": "npm run build:adapter && node tests/extract-metadata.test.js && node tests/adapter.test.js && node tests/install-extension.test.js"
+    "test": "npm run build:adapter && node tests/app/extract-metadata.test.js && node tests/extension/adapter.test.js && node tests/extension/install-extension.test.js"
   },
   "dependencies": {},
   "devDependencies": {
