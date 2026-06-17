@@ -13,7 +13,7 @@
     "dist:win": "npm run build:adapter && cd app && zig build package -Dpackage-target=windows -Doptimize=ReleaseSmall",
     "dist:linux": "npm run build:adapter && cd app && zig build package -Dpackage-target=linux -Doptimize=ReleaseSmall",
     "install:extension": "npm run build:adapter && node scripts/install-extension.js",
-    "test": "npm run build:adapter && node tests/app/extract-metadata.test.js && node tests/app/power-button.test.js && node tests/extension/adapter.test.js && node tests/extension/install-extension.test.js"
+    "test": "npm run build:adapter && node tests/app/extract-metadata.test.js && node tests/app/summarizer.test.js && node tests/app/power-button.test.js && node tests/extension/adapter.test.js && node tests/extension/install-extension.test.js"
   },
   "dependencies": {},
   "devDependencies": {

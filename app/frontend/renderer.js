@@ -13,6 +13,9 @@ const bmoBody = typeof document !== 'undefined' ? document.querySelector('.bmo-b
 let resetTimeout = null;
 let consoleBuffer = [];
 let appBufferSize = 500;
+let summarizerConfig = null;
+let summarizerSequence = 0;
+
 
 // Map Hitch event types to styling categories (states) and specific classes
 const eventMap = {
@@ -161,15 +164,16 @@ function handleHitchEvent(envelope) {
   if (tickerWrap) {
     tickerWrap.textContent = metadata.tickerText;
   }
+  updateTickerSummary(envelope);
   if (screenConsoleContent) {
     const formattedLines = metadata.consoleText.split('\n').map(line => {
       const colonIndex = line.indexOf(':');
       if (colonIndex !== -1) {
-        const key = line.substring(0, colonIndex);
-        const val = line.substring(colonIndex + 1);
+        const key = escapeHtml(line.substring(0, colonIndex));
+        const val = escapeHtml(line.substring(colonIndex + 1));
         return `<span>${key}:</span>${val}`;
       }
-      return line;
+      return escapeHtml(line);
     });
 
     if (consoleBuffer.length > 0) {
@@ -229,6 +233,62 @@ function applyHostConfig(config) {
     );
     applyHarnessColor(currentHarness);
   }
+  summarizerConfig = normalizeSummarizerConfig(parsedConfig.summarizer);
+  if (summarizerConfig) console.info(`hitch-face summarizer configured: ${summarizerConfig.model} @ ${summarizerConfig.base_url}`);
+}
+
+function normalizeSummarizerConfig(config) {
+  if (!config || !config.base_url || !config.model) return null;
+  const temperature = Number(config.temperature);
+  const maxToken = Number.parseInt(config.max_token, 10);
+  return {
+    base_url: String(config.base_url).replace(/\/+$/, ''),
+    api_key: String(config.api_key ?? ''),
+    model: String(config.model),
+    prompt: String(config.prompt || 'Summarize the Hitch event in one line. Only reply with the answer.'),
+    temperature: Number.isFinite(temperature) ? temperature : 0.2,
+    max_token: Number.isFinite(maxToken) && maxToken > 0 ? maxToken : 20,
+  };
+}
+
+async function summarizeEvent(envelope, config, fetchImpl = globalThis.fetch) {
+  const normalized = normalizeSummarizerConfig(config);
+  if (!normalized || typeof fetchImpl !== 'function') return null;
+
+  const headers = { 'content-type': 'application/json' };
+  if (normalized.api_key) headers.authorization = `Bearer ${normalized.api_key}`;
+  const response = await fetchImpl(`${normalized.base_url}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: normalized.model,
+      messages: [
+        { role: 'system', content: normalized.prompt },
+        { role: 'user', content: JSON.stringify(envelope) },
+      ],
+      temperature: normalized.temperature,
+      max_tokens: normalized.max_token,
+      stream: false,
+    }),
+  });
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text;
+  if (typeof content !== 'string') return null;
+  const summary = content.replace(/\s+/g, ' ').trim();
+  return summary || null;
+}
+
+function updateTickerSummary(envelope, tickerElement = tickerWrap, config = summarizerConfig, fetchImpl = globalThis.fetch) {
+  if (!tickerElement || !config) return Promise.resolve(null);
+  const sequence = ++summarizerSequence;
+  return summarizeEvent(envelope, config, fetchImpl)
+    .then(summary => {
+      if (summary && sequence === summarizerSequence) tickerElement.textContent = summary;
+      return summary;
+    })
+    .catch(() => null);
 }
 
 function normalizeHarnessKey(value) {
@@ -500,5 +560,14 @@ function extractMetadata(envelope) {
   return { harness, event, hudText, tickerText, consoleText: consoleLines.join('\n') };
 }
 
-export { extractMetadata };
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export { applyHostConfig, escapeHtml, extractMetadata, normalizeSummarizerConfig, summarizeEvent, updateTickerSummary };
 
