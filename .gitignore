@@ -52,6 +52,7 @@ temp/
 .superpowers/
 .omx/
 .omo/
+.serena/
 
 # Symlinks
 .config
