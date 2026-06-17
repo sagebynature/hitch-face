@@ -397,16 +397,13 @@ body {
   height: 25px;
 }
 
-/* Blue Triangle Button */
-.btn-triangle-blue {
-  width: 20px;
-  height: 20px;
-  background: #2a6f97;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  transform: rotate(90deg);
-  border-radius: 2px;
-  box-shadow: 0 2px 0 #1b4965;
-  transition: transform 0.1s;
+/* Power Button */
+.btn-power {
+  color: #5f1717;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 24px;
+  padding: 0;
 }
 
 /* Green Small Circle Button */

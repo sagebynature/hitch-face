@@ -132,6 +132,14 @@ const Session = struct {
         self.events[self.event_count].set(envelope);
         self.event_count += 1;
     }
+
+    fn powerDown(self: *Session) void {
+        self.window_visible = false;
+        self.event_received = false;
+        self.moving = false;
+        self.restore_pending = false;
+        self.original_valid = false;
+    }
 };
 
 const RequestKind = enum { event, expression };
@@ -366,12 +374,14 @@ const App = struct {
         logBridgePayload("hitch.closeSession", invocation.request.payload);
         const self: *@This() = @ptrCast(@alignCast(context));
         const window_id = invocation.source.window_id;
-        if (self.runtime) |runtime| {
-            runtime.options.platform.services.closeWindow(window_id) catch closeNativeWindow(runtime, window_id);
-        }
         self.mutex.lockUncancelable(self.io);
-        self.removeSessionByWindow(window_id);
+        if (self.findSessionByWindow(window_id)) |session| {
+            session.powerDown();
+        }
         self.mutex.unlock(self.io);
+        if (self.runtime) |runtime| {
+            hideNativeWindow(runtime, window_id);
+        }
         return std.fmt.bufPrint(output, "{{\"ok\":true}}", .{});
     }
 
@@ -901,6 +911,22 @@ test "session starts hidden until an event is received" {
     try std.testing.expect(!session.event_received);
     session.event_received = true;
     try std.testing.expect(session.event_received);
+}
+
+test "power button hides session until next event" {
+    var session: Session = undefined;
+    session.init("s", "h", 1);
+    session.window_visible = true;
+    session.event_received = true;
+    session.moving = true;
+    session.restore_pending = true;
+
+    session.powerDown();
+
+    try std.testing.expect(!session.window_visible);
+    try std.testing.expect(!session.event_received);
+    try std.testing.expect(!session.moving);
+    try std.testing.expect(!session.restore_pending);
 }
 
 test "session harness updates when default session receives event" {

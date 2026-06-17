@@ -389,7 +389,7 @@ if (bmoScreen) {
 
 const btnPower = typeof document !== 'undefined' ? document.getElementById('btn-power') : null;
 
-// Bind blue triangle button to power down window for session
+// Bind power button to hide this session until its next event.
 if (btnPower) {
   btnPower.addEventListener('click', () => {
     if (zeroNativeBridge) {
