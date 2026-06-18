@@ -18,7 +18,7 @@
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^24.13.1",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "zero-native": "^0.2.0"
   },
   "engines": {
