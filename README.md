@@ -116,29 +116,12 @@ port = 8888
 ticker_speed_s = 5
 buffer_size = 500
 
-# Optional OpenAI-compatible summarizer for ticker text.
-# Enabled only when `[summarizer]` has `base_url` and `model`.
-# api_key may be omitted for local servers that do not require auth.
-[summarizer]
-base_url = "http://localhost:9000/v1"
-api_key = "omlx"
-model = "mlx-community--Qwen3-0.6B-4bit"
-prompt = "Summarize under 20 words. Only reply with answer"
-temperature = 0.2
-max_token = 20
-
 [colors]
 # `default` is used before an event identifies a harness. If omitted, `pi`,
 # then `omp`, then the first configured color is used as the startup fallback.
 default = "#4ca8a1"
 pi = "#4ca8a1"
 antigravity = "#de8a1d"
-```
-
-When `[summarizer]` is configured, the widget sends each received Hitch event to
-`{base_url}/chat/completions` using the configured OpenAI-compatible `model`.
-The returned one-line message replaces the default metadata ticker text. If the
-summarizer request fails, the ticker keeps the local fallback text.
 
 ## Event API
 

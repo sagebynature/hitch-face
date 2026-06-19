@@ -13,19 +13,10 @@ interval_ms = 100
 port = 8888
 
 # Ticker scroll speed in seconds per cycle — lower is faster (default: 15)
-ticker_speed_s = 10
+ticker_speed_s = 2
 
 # Maximum number of lines to retain in the console buffer (default: 500)
 buffer_size = 500
-
-# Optional OpenAI-compatible event summarizer for ticker text.
-[summarizer]
-base_url = "http://localhost:9000/v1"
-api_key = "omlx"
-model = "mlx-community--Qwen3-0.6B-4bit"
-prompt = "Summarize under 20 words. Only reply with answer"
-temperature = 0.2
-max_token = 20
 
 # Custom casing colors for different harnesses
 [colors]

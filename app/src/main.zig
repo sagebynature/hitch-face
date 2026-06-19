@@ -50,8 +50,6 @@ const Config = struct {
     movement_enabled: bool = false,
     colors: [16]Color = undefined,
     color_count: usize = 0,
-    summarizer: SummarizerConfig = .{},
-
 
     fn addColor(self: *Config, key: []const u8, value: []const u8) void {
         if (self.color_count >= self.colors.len) return;
@@ -59,61 +57,6 @@ const Config = struct {
         self.color_count += 1;
     }
 };
-
-const SummarizerConfig = struct {
-    base_url: [256]u8 = undefined,
-    base_url_len: usize = 0,
-    api_key: [256]u8 = undefined,
-    api_key_len: usize = 0,
-    model: [160]u8 = undefined,
-    model_len: usize = 0,
-    prompt: [512]u8 = undefined,
-    prompt_len: usize = 0,
-    temperature: f64 = 0.2,
-    max_token: u32 = 20,
-
-    fn isConfigured(self: *const SummarizerConfig) bool {
-        return self.base_url_len != 0 and self.model_len != 0;
-    }
-
-    fn baseUrl(self: *const SummarizerConfig) []const u8 {
-        return self.base_url[0..self.base_url_len];
-    }
-
-    fn apiKey(self: *const SummarizerConfig) []const u8 {
-        return self.api_key[0..self.api_key_len];
-    }
-
-    fn modelSlice(self: *const SummarizerConfig) []const u8 {
-        return self.model[0..self.model_len];
-    }
-
-    fn promptSlice(self: *const SummarizerConfig) []const u8 {
-        return self.prompt[0..self.prompt_len];
-    }
-
-    fn set(self: *SummarizerConfig, key: []const u8, value: []const u8) void {
-        if (std.mem.eql(u8, key, "base_url")) {
-            copyBounded(&self.base_url, &self.base_url_len, value);
-        } else if (std.mem.eql(u8, key, "api_key")) {
-            copyBounded(&self.api_key, &self.api_key_len, value);
-        } else if (std.mem.eql(u8, key, "model")) {
-            copyBounded(&self.model, &self.model_len, value);
-        } else if (std.mem.eql(u8, key, "prompt")) {
-            copyBounded(&self.prompt, &self.prompt_len, value);
-        } else if (std.mem.eql(u8, key, "temperature")) {
-            self.temperature = std.fmt.parseFloat(f64, value) catch self.temperature;
-        } else if (std.mem.eql(u8, key, "max_token")) {
-            self.max_token = std.fmt.parseInt(u32, value, 10) catch self.max_token;
-        }
-    }
-
-    fn copyBounded(dest: []u8, len: *usize, value: []const u8) void {
-        len.* = @min(value.len, dest.len);
-        @memcpy(dest[0..len.*], value[0..len.*]);
-    }
-};
-
 
 const Color = struct {
     key: [48]u8 = undefined,
@@ -676,7 +619,7 @@ fn loadConfig(io: std.Io, env_map: *std.process.Environ.Map) Config {
 }
 
 fn parseConfig(content: []const u8, config: *Config) void {
-    var section: enum { root, colors, summarizer, other } = .root;
+    var section: enum { root, colors } = .root;
     var lines = std.mem.splitScalar(u8, content, '\n');
     while (lines.next()) |raw_line| {
         const no_cr = std.mem.trim(u8, raw_line, "\r");
@@ -686,12 +629,8 @@ fn parseConfig(content: []const u8, config: *Config) void {
             section = .colors;
             continue;
         }
-        if (std.mem.eql(u8, trimmed, "[summarizer]")) {
-            section = .summarizer;
-            continue;
-        }
         if (trimmed[0] == '[') {
-            section = .other;
+            section = .root;
             continue;
         }
         const eq = std.mem.indexOfScalar(u8, trimmed, '=') orelse continue;
@@ -699,22 +638,18 @@ fn parseConfig(content: []const u8, config: *Config) void {
         const value = trimTomlValue(trimmed[eq + 1 ..]);
         if (section == .colors) {
             config.addColor(key, value);
-        } else if (section == .summarizer) {
-            config.summarizer.set(key, value);
-        } else if (section == .root) {
-            if (std.mem.eql(u8, key, "speed")) {
-                config.speed = std.fmt.parseFloat(f64, value) catch config.speed;
-            } else if (std.mem.eql(u8, key, "interval_ms")) {
-                config.interval_ms = std.fmt.parseInt(u64, value, 10) catch config.interval_ms;
-            } else if (std.mem.eql(u8, key, "port")) {
-                config.port = std.fmt.parseInt(u16, value, 10) catch config.port;
-            } else if (std.mem.eql(u8, key, "ticker_speed_s")) {
-                config.ticker_speed_s = std.fmt.parseFloat(f64, value) catch config.ticker_speed_s;
-            } else if (std.mem.eql(u8, key, "buffer_size")) {
-                config.buffer_size = std.fmt.parseInt(u32, value, 10) catch config.buffer_size;
-            } else if (std.mem.eql(u8, key, "movement_enabled")) {
-                config.movement_enabled = std.mem.eql(u8, value, "true");
-            }
+        } else if (std.mem.eql(u8, key, "speed")) {
+            config.speed = std.fmt.parseFloat(f64, value) catch config.speed;
+        } else if (std.mem.eql(u8, key, "interval_ms")) {
+            config.interval_ms = std.fmt.parseInt(u64, value, 10) catch config.interval_ms;
+        } else if (std.mem.eql(u8, key, "port")) {
+            config.port = std.fmt.parseInt(u16, value, 10) catch config.port;
+        } else if (std.mem.eql(u8, key, "ticker_speed_s")) {
+            config.ticker_speed_s = std.fmt.parseFloat(f64, value) catch config.ticker_speed_s;
+        } else if (std.mem.eql(u8, key, "buffer_size")) {
+            config.buffer_size = std.fmt.parseInt(u32, value, 10) catch config.buffer_size;
+        } else if (std.mem.eql(u8, key, "movement_enabled")) {
+            config.movement_enabled = std.mem.eql(u8, value, "true");
         }
     }
 }
@@ -750,53 +685,19 @@ fn writeConfigJson(config: Config, output: []u8) ![]const u8 {
     try writer.print("{{\"ticker_speed_s\":{d},\"buffer_size\":{d},\"colors\":{{", .{ config.ticker_speed_s, config.buffer_size });
     for (config.colors[0..config.color_count], 0..) |color, i| {
         if (i != 0) try writer.writeAll(",");
-        try writeJsonString(&writer, color.key[0..color.key_len]);
-        try writer.writeAll(":");
-        try writeJsonString(&writer, color.value[0..color.value_len]);
+        try writer.print("\"{s}\":\"{s}\"", .{ color.key[0..color.key_len], color.value[0..color.value_len] });
     }
-    try writer.writeAll("}");
-    if (config.summarizer.isConfigured()) {
-        try writer.writeAll(",\"summarizer\":{");
-        try writer.writeAll("\"base_url\":");
-        try writeJsonString(&writer, config.summarizer.baseUrl());
-        try writer.writeAll(",\"api_key\":");
-        try writeJsonString(&writer, config.summarizer.apiKey());
-        try writer.writeAll(",\"model\":");
-        try writeJsonString(&writer, config.summarizer.modelSlice());
-        try writer.writeAll(",\"prompt\":");
-        try writeJsonString(&writer, config.summarizer.promptSlice());
-        try writer.print(",\"temperature\":{d},\"max_token\":{d}", .{ config.summarizer.temperature, config.summarizer.max_token });
-        try writer.writeAll("}");
-    }
-    try writer.writeAll("}");
+    try writer.writeAll("}}");
     return writer.buffered();
-}
-
-fn writeJsonString(writer: *std.Io.Writer, value: []const u8) !void {
-    try writer.writeAll("\"");
-    for (value) |ch| {
-        switch (ch) {
-            '"' => try writer.writeAll("\\\""),
-            '\\' => try writer.writeAll("\\\\"),
-            '\n' => try writer.writeAll("\\n"),
-            '\r' => try writer.writeAll("\\r"),
-            '\t' => try writer.writeAll("\\t"),
-            else => try writer.print("{c}", .{ch}),
-        }
-    }
-    try writer.writeAll("\"");
 }
 
 fn logConfig(config: Config) void {
     std.debug.print(
-        "Hitch Face config: movement_enabled={} speed={d} interval_ms={d} port={d} ticker_speed_s={d} buffer_size={d} colors={d} summarizer={}\n",
-        .{ config.movement_enabled, config.speed, config.interval_ms, config.port, config.ticker_speed_s, config.buffer_size, config.color_count, config.summarizer.isConfigured() },
+        "Hitch Face config: movement_enabled={} speed={d} interval_ms={d} port={d} ticker_speed_s={d} buffer_size={d} colors={d}\n",
+        .{ config.movement_enabled, config.speed, config.interval_ms, config.port, config.ticker_speed_s, config.buffer_size, config.color_count },
     );
     for (config.colors[0..config.color_count]) |color| {
         std.debug.print("Hitch Face config color: {s}={s}\n", .{ color.key[0..color.key_len], color.value[0..color.value_len] });
-    }
-    if (config.summarizer.isConfigured()) {
-        std.debug.print("Hitch Face config summarizer: base_url={s} model={s} max_token={d}\n", .{ config.summarizer.baseUrl(), config.summarizer.modelSlice(), config.summarizer.max_token });
     }
 }
 
@@ -966,47 +867,6 @@ test "writes config JSON with default color" {
     var output: [256]u8 = undefined;
     const json = try writeConfigJson(config, &output);
     try std.testing.expectEqualStrings("{\"ticker_speed_s\":1,\"buffer_size\":5,\"colors\":{\"default\":\"#e4c160\"}}", json);
-}
-
-test "parses summarizer config values" {
-    var config: Config = .{};
-    parseConfig(
-        \\[summarizer]
-        \\base_url = "http://localhost:9000/v1"
-        \\api_key = omlx
-        \\model = "mlx-community--Qwen3-0.6B-4bit"
-        \\prompt = "Summarize under 20 words.  Only reply with answer"
-        \\temperature = 0.2
-        \\max_token = 20
-    , &config);
-    try std.testing.expect(config.summarizer.isConfigured());
-    try std.testing.expectEqualStrings("http://localhost:9000/v1", config.summarizer.baseUrl());
-    try std.testing.expectEqualStrings("omlx", config.summarizer.apiKey());
-    try std.testing.expectEqualStrings("mlx-community--Qwen3-0.6B-4bit", config.summarizer.modelSlice());
-    try std.testing.expectEqualStrings("Summarize under 20 words.  Only reply with answer", config.summarizer.promptSlice());
-    try std.testing.expectEqual(@as(f64, 0.2), config.summarizer.temperature);
-    try std.testing.expectEqual(@as(u32, 20), config.summarizer.max_token);
-}
-
-test "writes config JSON with summarizer section" {
-    var config: Config = .{};
-    parseConfig(
-        \\ticker_speed_s = 1
-        \\buffer_size = 5
-        \\[summarizer]
-        \\base_url = "http://localhost:9000/v1"
-        \\api_key = omlx
-        \\model = "local-model"
-        \\temperature = 0.2
-        \\max_token = 20
-    , &config);
-    config.summarizer.set("prompt", "Summarize \"briefly\"");
-    var output: [1024]u8 = undefined;
-    const json = try writeConfigJson(config, &output);
-    const expected =
-        \\{"ticker_speed_s":1,"buffer_size":5,"colors":{},"summarizer":{"base_url":"http://localhost:9000/v1","api_key":"omlx","model":"local-model","prompt":"Summarize \"briefly\"","temperature":0.2,"max_token":20}}
-    ;
-    try std.testing.expectEqualStrings(expected, json);
 }
 
 
